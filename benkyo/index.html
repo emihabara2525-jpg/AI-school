@@ -20,6 +20,7 @@
     display: flex; align-items: flex-end; justify-content: space-between;
     margin-bottom: 26px;
   }
+  .topleft { display: flex; align-items: center; gap: 14px; }
   .brand { line-height: 1.1; }
   .brand .en {
     font-size: 15px; letter-spacing: 5px; text-transform: uppercase;
@@ -146,9 +147,12 @@
 
 <div id="app">
   <div class="top">
-    <div class="brand">
-      <div class="en">Study Time</div>
-      <div class="title">スタディ</div>
+    <div class="topleft">
+      <button class="back hidden" id="topBack" onclick="goHome()">← ホーム</button>
+      <div class="brand">
+        <div class="en">Study Time</div>
+        <div class="title">スタディ</div>
+      </div>
     </div>
     <div class="stars">✨ <span id="starCount">0</span></div>
   </div>
@@ -169,7 +173,6 @@
   <!-- クイズ -->
   <div id="quiz" class="hidden">
     <div class="quiz-head">
-      <button class="back" onclick="goHome()">← もどる</button>
       <div class="quiz-title" id="quizTitle"></div>
     </div>
     <div class="progress"><div id="bar"></div></div>
@@ -305,7 +308,11 @@ function genOne(subject){
 }
 
 /* ===== 画面 ===== */
-function show(id){ ["home","quiz","end"].forEach(x=>document.getElementById(x).classList.toggle("hidden", x!==id)); }
+function show(id){
+  ["home","quiz","end"].forEach(x=>document.getElementById(x).classList.toggle("hidden", x!==id));
+  // ホーム以外の画面では「← ホーム」ボタンを出す
+  document.getElementById("topBack").classList.toggle("hidden", id==="home");
+}
 
 function startQuiz(subject){
   quizList = [];
