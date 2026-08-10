@@ -3,10 +3,16 @@
 <title>おべんきょうアプリ</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    /* テーマ色（きせかえでJSが書きかえる） */
+    --bg: linear-gradient(160deg, #f3e8ff 0%, #ffe9f3 45%, #fff5f0 100%);
+    --accA: #c084d9;
+    --accB: #f778a8;
+  }
   html, body {
     margin: 0; padding: 0;
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
-    background: linear-gradient(160deg, #f3e8ff 0%, #ffe9f3 45%, #fff5f0 100%);
+    background: var(--bg);
     background-attachment: fixed;
     color: #4a4453;
     user-select: none;
@@ -28,7 +34,7 @@
   }
   .title {
     font-size: 32px; font-weight: 700; letter-spacing: 2px;
-    background: linear-gradient(90deg, #c084d9, #f778a8);
+    background: linear-gradient(90deg, var(--accA), var(--accB));
     -webkit-background-clip: text; background-clip: text; color: transparent;
     margin-top: 2px;
   }
@@ -38,6 +44,12 @@
     border-radius: 999px; padding: 10px 20px;
     font-size: 20px; font-weight: 700; color: #e0669a;
     box-shadow: 0 8px 22px rgba(200,120,180,.20);
+  }
+  #points.pop { animation: pointPop .45s ease; }
+  @keyframes pointPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.28); color: #ff8fab; }
+    100% { transform: scale(1); }
   }
 
   /* ホーム：教科ボタン */
@@ -70,6 +82,44 @@
   .s-mix     { background: linear-gradient(150deg, #f7b6e0, #c084d9); }
   .home-msg { text-align: center; font-size: 15px; color: #b09bbd; margin: 28px 0 10px; letter-spacing: 1px; }
 
+  /* レベルカード */
+  .levelcard {
+    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 26px;
+    padding: 18px 22px; margin-bottom: 20px;
+    box-shadow: 0 14px 34px rgba(170,130,190,.16);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .levelcard .lv-emoji {
+    width: 60px; height: 60px; flex: 0 0 60px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    background: linear-gradient(150deg, var(--accA), var(--accB));
+  }
+  .levelcard .lv-info { flex: 1; min-width: 0; }
+  .lv-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .lv-num { font-size: 15px; font-weight: 700; color: #a568bf; letter-spacing: 1px; }
+  .lv-name { font-size: 20px; font-weight: 700; color: #5a4f63; }
+  .lv-pts { margin-left: auto; font-size: 15px; font-weight: 700; color: #e0669a; white-space: nowrap; }
+  .lv-bar { height: 12px; background: rgba(200,170,210,.22); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+  .lv-bar > div { height: 100%; background: linear-gradient(90deg,var(--accA),var(--accB)); width: 0%; transition: width .5s; }
+  .lv-next { font-size: 12px; color: #b09bbd; margin-top: 6px; letter-spacing: .5px; }
+
+  /* きせかえ */
+  .theme-title { font-size: 14px; font-weight: 700; color: #a568bf; letter-spacing: 2px; margin: 26px 0 12px; text-align: center; }
+  .themes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .theme {
+    width: 78px; border: 2px solid transparent; border-radius: 20px; padding: 8px 6px 10px;
+    background: rgba(255,255,255,.7); cursor: pointer; text-align: center;
+    box-shadow: 0 8px 20px rgba(170,130,190,.14);
+  }
+  .theme .swatch { height: 40px; border-radius: 14px; margin-bottom: 6px; }
+  .theme .t-name { font-size: 12px; font-weight: 700; color: #6b5d6f; }
+  .theme.selected { border-color: var(--accB); }
+  .theme.locked { cursor: default; }
+  .theme.locked .swatch { filter: grayscale(.7) opacity(.5); }
+  .theme.locked .t-name { color: #b3a6bd; }
+  .theme .t-lock { font-size: 11px; color: #c49bb5; font-weight: 700; }
+
   /* カード共通 */
   .card {
     background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
@@ -90,7 +140,7 @@
     height: 12px; background: rgba(255,255,255,.7); border-radius: 999px; overflow: hidden;
     margin: 16px 0 24px; box-shadow: inset 0 1px 3px rgba(160,120,180,.12);
   }
-  .progress > div { height: 100%; background: linear-gradient(90deg,#f7a8cf,#c79bee); width: 0%; transition: width .35s; }
+  .progress > div { height: 100%; background: linear-gradient(90deg,var(--accB),var(--accA)); width: 0%; transition: width .35s; }
 
   .question {
     padding: 40px 22px; text-align: center;
@@ -131,7 +181,7 @@
   .next {
     display: block; margin: 20px auto 0; border: none; border-radius: 999px;
     padding: 18px 52px; font-size: 21px; font-weight: 700; letter-spacing: 2px; color: #fff;
-    background: linear-gradient(90deg,#f778a8,#c084d9); cursor: pointer;
+    background: linear-gradient(90deg,var(--accB),var(--accA)); cursor: pointer;
     box-shadow: 0 12px 28px rgba(200,120,200,.4);
     transition: transform .1s ease;
   }
@@ -146,9 +196,16 @@
     box-shadow: 0 16px 40px rgba(170,130,190,.16);
   }
   .result .big { font-size: 76px; margin: 6px 0; }
+  .bonus-box {
+    background: linear-gradient(150deg, rgba(255,249,230,.95), rgba(255,240,246,.95));
+    border: 1px solid rgba(255,220,150,.7); border-radius: 18px;
+    padding: 12px 18px; margin: 10px auto 0; max-width: 520px;
+    font-size: 17px; color: #6b5d4f; line-height: 1.5;
+  }
+  .bonus-box b { color: #e0669a; }
   .result .msg {
     font-size: 26px; font-weight: 700; letter-spacing: 1px; margin: 12px 0 20px;
-    background: linear-gradient(90deg,#c084d9,#f778a8);
+    background: linear-gradient(90deg,var(--accA),var(--accB));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 </style>
@@ -162,11 +219,23 @@
         <div class="title">スタディ</div>
       </div>
     </div>
-    <div class="stars">✨ <span id="starCount">0</span></div>
+    <div class="stars" id="points">🌸 <span id="pointCount">0</span> pt</div>
   </div>
 
   <!-- ホーム -->
   <div id="home">
+    <div class="levelcard">
+      <div class="lv-emoji" id="lvEmoji">🌱</div>
+      <div class="lv-info">
+        <div class="lv-line">
+          <span class="lv-num" id="lvNum">Lv.1</span>
+          <span class="lv-name" id="lvName">たね</span>
+          <span class="lv-pts" id="lvPts">🌸 0 pt</span>
+        </div>
+        <div class="lv-bar"><div id="lvBar"></div></div>
+        <div class="lv-next" id="lvNext"></div>
+      </div>
+    </div>
     <div class="grid">
       <button class="subject s-math"    onclick="startQuiz('math')"><span class="emoji">🧮</span>算数<span class="sub">MATH</span></button>
       <button class="subject s-kanji"   onclick="startQuiz('kanji')"><span class="emoji">🖋️</span>漢字<span class="sub">KANJI</span></button>
@@ -175,6 +244,8 @@
       <button class="subject s-science" onclick="startQuiz('science')"><span class="emoji">🔬</span>理科<span class="sub">SCIENCE</span></button>
       <button class="subject s-mix"     onclick="startQuiz('mix')"><span class="emoji">🎀</span>ミックス<span class="sub">MIX</span></button>
     </div>
+    <div class="theme-title">🎨 きせかえ（ポイントでふえるよ）</div>
+    <div class="themes" id="themes"></div>
     <div class="home-msg">すきな教科をえらんでね ♡</div>
   </div>
 
@@ -196,7 +267,8 @@
     <div class="result">
       <div class="big" id="endEmoji">🎉</div>
       <div class="msg" id="endMsg"></div>
-      <div style="font-size:22px;color:#666" id="endStars"></div>
+      <div style="font-size:20px;color:#7a6f80;font-weight:700" id="endStars"></div>
+      <div id="endBonus" style="margin-top:14px"></div>
       <button class="next" style="margin-top:24px" onclick="goHome()">ホームへ</button>
     </div>
   </div>
@@ -297,12 +369,97 @@ const SUBJECTS = {
 };
 const TOTAL = 10; // 1回の問題数
 
-let stars = Number(localStorage.getItem("benkyo_stars") || 0);
+// レベルと称号（ポイントでレベルアップ。1問=1pt）
+const LEVELS = [
+  {min:0,   emoji:"🌱", name:"たね"},
+  {min:20,  emoji:"🌷", name:"つぼみ"},
+  {min:50,  emoji:"🌸", name:"はな"},
+  {min:90,  emoji:"⭐", name:"きらめき"},
+  {min:150, emoji:"🌟", name:"スター"},
+  {min:230, emoji:"💎", name:"ジュエル"},
+  {min:330, emoji:"👑", name:"クイーン"},
+];
+
+// きせかえテーマ（costポイントたまると使える）
+const THEMES = [
+  {id:"sakura",  name:"さくら",     cost:0,   bg:"linear-gradient(160deg,#f3e8ff 0%,#ffe9f3 45%,#fff5f0 100%)", a:"#c084d9", b:"#f778a8", sw:"linear-gradient(135deg,#f3e8ff,#f778a8)"},
+  {id:"mint",    name:"ミント",     cost:30,  bg:"linear-gradient(160deg,#e3fbf0 0%,#e6f6ff 55%,#f5fffb 100%)", a:"#4fc79a", b:"#6aa8f0", sw:"linear-gradient(135deg,#8ee6c0,#6aa8f0)"},
+  {id:"lavender",name:"ラベンダー", cost:80,  bg:"linear-gradient(160deg,#efe6ff 0%,#f6e9ff 50%,#fdf3ff 100%)", a:"#9b7bf0", b:"#c084d9", sw:"linear-gradient(135deg,#c4a8ff,#9b7bf0)"},
+  {id:"sunset",  name:"サンセット", cost:150, bg:"linear-gradient(160deg,#fff0e0 0%,#ffe4ec 55%,#fff6f0 100%)", a:"#ff922b", b:"#ff6f91", sw:"linear-gradient(135deg,#ffb37e,#ff6f91)"},
+  {id:"ocean",   name:"オーシャン", cost:230, bg:"linear-gradient(160deg,#e2f0ff 0%,#e9f7ff 55%,#f3fbff 100%)", a:"#4dabf7", b:"#7c9bf0", sw:"linear-gradient(135deg,#8fd3ff,#6aa8f0)"},
+];
+
+let points = Number(localStorage.getItem("benkyo_points") || 0);
+let currentTheme = localStorage.getItem("benkyo_theme") || "sakura";
 let quizList = [];
 let idx = 0;
-let gotThisSession = 0;
+let gotThisSession = 0;   // 正解した数
+let pointStart = 0;       // クイズ開始時のポイント（レベルアップ判定用）
 
-document.getElementById("starCount").textContent = stars;
+function levelOf(p){
+  let lv = LEVELS[0], i = 0;
+  for(let k=0;k<LEVELS.length;k++){ if(p>=LEVELS[k].min){ lv=LEVELS[k]; i=k; } }
+  return {lv, index:i, next: LEVELS[i+1] || null};
+}
+
+// テーマを画面に反映
+function applyTheme(id){
+  const t = THEMES.find(x=>x.id===id) || THEMES[0];
+  document.documentElement.style.setProperty("--bg", t.bg);
+  document.documentElement.style.setProperty("--accA", t.a);
+  document.documentElement.style.setProperty("--accB", t.b);
+}
+
+// 着せ替えを選ぶ（ポイントが足りていれば）
+function selectTheme(id){
+  const t = THEMES.find(x=>x.id===id);
+  if(!t || points < t.cost) return;
+  currentTheme = id;
+  localStorage.setItem("benkyo_theme", id);
+  applyTheme(id);
+  renderThemes();
+}
+
+// きせかえ一覧を描く
+function renderThemes(){
+  const box = document.getElementById("themes");
+  box.innerHTML = "";
+  THEMES.forEach(t=>{
+    const unlocked = points >= t.cost;
+    const el = document.createElement("div");
+    el.className = "theme" + (currentTheme===t.id ? " selected":"") + (unlocked?"":" locked");
+    el.innerHTML = `<div class="swatch" style="background:${t.sw}"></div>`
+      + `<div class="t-name">${t.name}</div>`
+      + (unlocked ? "" : `<div class="t-lock">🔒 ${t.cost}pt</div>`);
+    if(unlocked) el.onclick = ()=>selectTheme(t.id);
+    box.appendChild(el);
+  });
+}
+
+// ポイント・レベル表示を更新
+function renderStatus(){
+  document.getElementById("pointCount").textContent = points;
+  const info = levelOf(points);
+  document.getElementById("lvEmoji").textContent = info.lv.emoji;
+  document.getElementById("lvNum").textContent = "Lv." + (info.index+1);
+  document.getElementById("lvName").textContent = info.lv.name;
+  document.getElementById("lvPts").textContent = "🌸 " + points + " pt";
+  const bar = document.getElementById("lvBar");
+  const nextEl = document.getElementById("lvNext");
+  if(info.next){
+    const span = info.next.min - info.lv.min;
+    const cur = points - info.lv.min;
+    bar.style.width = Math.min(100, cur/span*100) + "%";
+    nextEl.textContent = "つぎの「"+info.next.name+"」まで あと "+(info.next.min-points)+"pt";
+  } else {
+    bar.style.width = "100%";
+    nextEl.textContent = "さいこうレベル！すごい！🎉";
+  }
+}
+
+applyTheme(currentTheme);
+renderStatus();
+renderThemes();
 
 function pick(arr, n){ // ランダムにn個
   const c = arr.slice();
@@ -361,6 +518,7 @@ function startQuiz(subject){
   quizList = [];
   for(let i=0;i<TOTAL;i++) quizList.push(genOne(subject));
   idx = 0; gotThisSession = 0;
+  pointStart = points;   // このクイズを始める前のポイントを覚えておく
   document.getElementById("quizTitle").textContent = SUBJECTS[subject].name;
   show("quiz");
   renderQuestion();
@@ -387,14 +545,19 @@ function renderQuestion(){
 function answer(btn, chosen, correct){
   const buttons = document.querySelectorAll(".choice");
   buttons.forEach(b=>b.onclick=null);
+  // 1問こたえるごとに1ポイント（正解でも まちがえても）
+  points++;
+  localStorage.setItem("benkyo_points", points);
+  // 右上のポイントを その場で更新（＋ピコッとアニメ）
+  const pill = document.getElementById("points");
+  document.getElementById("pointCount").textContent = points;
+  pill.classList.remove("pop"); void pill.offsetWidth; pill.classList.add("pop");
   const fb = document.getElementById("feedback");
   if(chosen===correct){
     btn.classList.add("correct");
     fb.textContent = pick(["せいかい！🎉","すごい！✨","やったね！😊","ばっちり！👍"],1)[0];
     fb.className = "feedback fb-ok";
-    stars++; gotThisSession++;
-    localStorage.setItem("benkyo_stars", stars);
-    document.getElementById("starCount").textContent = stars;
+    gotThisSession++;
   } else {
     btn.classList.add("wrong");
     buttons.forEach(b=>{ if(b.textContent===correct) b.classList.add("correct"); });
@@ -425,7 +588,28 @@ function finish(){
   if(gotThisSession>=8){ e.textContent="🏆"; m.textContent="よくできました！てんさい！"; }
   else if(gotThisSession>=5){ e.textContent="🎉"; m.textContent="がんばったね！すごい！"; }
   else { e.textContent="🌱"; m.textContent="よくちょうせんしたね！えらい！"; }
-  document.getElementById("endStars").textContent = "きょうは ⭐"+gotThisSession+"こ ゲット！";
+
+  const earned = points - pointStart;
+  document.getElementById("endStars").textContent =
+    "🌸 "+earned+"pt ゲット！（せいかい "+gotThisSession+"問）　ぜんぶで "+points+"pt";
+
+  // レベルアップ・きせかえアンロックのお祝い
+  const bonus = document.getElementById("endBonus");
+  bonus.innerHTML = "";
+  const beforeLv = levelOf(pointStart).index;
+  const afterLv  = levelOf(points).index;
+  if(afterLv > beforeLv){
+    const info = levelOf(points);
+    bonus.innerHTML += `<div class="bonus-box">🎊 レベルアップ！ <b>Lv.${afterLv+1}「${info.lv.name}」${info.lv.emoji}</b> になったよ！</div>`;
+  }
+  const newThemes = THEMES.filter(t=>t.cost>pointStart && t.cost<=points);
+  newThemes.forEach(t=>{
+    bonus.innerHTML += `<div class="bonus-box">🎨 あたらしいきせかえ <b>「${t.name}」</b> が つかえるよ！</div>`;
+  });
+
+  // ホーム画面の表示も新しいポイントに更新
+  renderStatus();
+  renderThemes();
 }
 
 function goHome(){ show("home"); }
