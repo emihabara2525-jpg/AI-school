@@ -1,0 +1,375 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>おべんきょうアプリ</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, #f3e8ff 0%, #ffe9f3 45%, #fff5f0 100%);
+    background-attachment: fixed;
+    color: #4a4453;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { max-width: 920px; margin: 0 auto; padding: 26px 22px 40px; min-height: 100vh; }
+
+  /* ヘッダー */
+  .top {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 26px;
+  }
+  .brand { line-height: 1.1; }
+  .brand .en {
+    font-size: 15px; letter-spacing: 5px; text-transform: uppercase;
+    color: #c9a2d4; font-weight: 600;
+  }
+  .title {
+    font-size: 32px; font-weight: 700; letter-spacing: 2px;
+    background: linear-gradient(90deg, #c084d9, #f778a8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-top: 2px;
+  }
+  .stars {
+    background: rgba(255,255,255,.75); backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,.9);
+    border-radius: 999px; padding: 10px 20px;
+    font-size: 20px; font-weight: 700; color: #e0669a;
+    box-shadow: 0 8px 22px rgba(200,120,180,.20);
+  }
+
+  /* ホーム：教科ボタン */
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 6px;
+  }
+  .subject {
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.6); border-radius: 26px;
+    padding: 26px 14px 22px;
+    font-size: 21px; font-weight: 700; letter-spacing: 1px; color: #fff;
+    cursor: pointer; text-align: center;
+    box-shadow: 0 14px 30px rgba(150,110,170,.22);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .subject:active { transform: translateY(3px) scale(.99); box-shadow: 0 8px 18px rgba(150,110,170,.22); }
+  .subject .emoji {
+    display: flex; align-items: center; justify-content: center;
+    width: 58px; height: 58px; margin: 0 auto 12px;
+    background: rgba(255,255,255,.28); border-radius: 18px;
+    font-size: 30px;
+  }
+  .subject .sub { display:block; font-size: 11px; letter-spacing: 3px; opacity: .85; font-weight: 600; margin-top: 3px; }
+  .s-math    { background: linear-gradient(150deg, #ffb37e, #ff8fab); }
+  .s-kanji   { background: linear-gradient(150deg, #ff9ac1, #e26aa0); }
+  .s-english { background: linear-gradient(150deg, #8fd3ff, #6aa8f0); }
+  .s-society { background: linear-gradient(150deg, #8ee6c0, #4fc79a); }
+  .s-science { background: linear-gradient(150deg, #c4a8ff, #9b7bf0); }
+  .s-mix     { background: linear-gradient(150deg, #f7b6e0, #c084d9); }
+  .home-msg { text-align: center; font-size: 15px; color: #b09bbd; margin: 28px 0 10px; letter-spacing: 1px; }
+
+  /* カード共通 */
+  .card {
+    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 28px;
+    box-shadow: 0 16px 40px rgba(170,130,190,.16);
+  }
+
+  /* クイズ画面 */
+  .quiz-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .back {
+    border: 1px solid rgba(255,255,255,.9); background: rgba(255,255,255,.7);
+    border-radius: 999px; padding: 10px 20px;
+    font-size: 15px; font-weight: 700; cursor: pointer; color: #a07bb5;
+    box-shadow: 0 6px 16px rgba(170,130,190,.16);
+  }
+  .quiz-title { font-weight: 700; font-size: 19px; letter-spacing: 2px; color: #a568bf; }
+  .progress {
+    height: 12px; background: rgba(255,255,255,.7); border-radius: 999px; overflow: hidden;
+    margin: 16px 0 24px; box-shadow: inset 0 1px 3px rgba(160,120,180,.12);
+  }
+  .progress > div { height: 100%; background: linear-gradient(90deg,#f7a8cf,#c79bee); width: 0%; transition: width .35s; }
+
+  .question {
+    padding: 40px 22px; text-align: center;
+    font-size: 38px; font-weight: 700; margin-bottom: 22px; color: #5a4f63;
+    min-height: 100px; display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 28px;
+    box-shadow: 0 16px 40px rgba(170,130,190,.16);
+  }
+  .choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .choice {
+    border: 1px solid rgba(255,255,255,.9); border-radius: 22px;
+    padding: 24px 12px; font-size: 26px; font-weight: 700;
+    background: rgba(255,255,255,.85); color: #5a4f63; cursor: pointer;
+    box-shadow: 0 10px 24px rgba(170,130,190,.14);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .choice:active { transform: translateY(2px); }
+  .choice.correct { background: linear-gradient(150deg,#8ee6c0,#4fc79a); color: #fff; border-color: transparent; box-shadow: 0 10px 26px rgba(80,190,150,.4); }
+  .choice.wrong   { background: linear-gradient(150deg,#ffb0b0,#ff8f9c); color: #fff; border-color: transparent; box-shadow: 0 10px 26px rgba(240,120,140,.4); }
+  .choice.dim { opacity: .4; }
+
+  /* フィードバック */
+  .feedback {
+    text-align: center; font-size: 26px; font-weight: 700; margin-top: 24px;
+    min-height: 40px; letter-spacing: 1px;
+  }
+  .fb-ok { color: #34b389; }
+  .fb-ng { color: #e6799b; }
+  .next {
+    display: block; margin: 20px auto 0; border: none; border-radius: 999px;
+    padding: 18px 52px; font-size: 21px; font-weight: 700; letter-spacing: 2px; color: #fff;
+    background: linear-gradient(90deg,#f778a8,#c084d9); cursor: pointer;
+    box-shadow: 0 12px 28px rgba(200,120,200,.4);
+    transition: transform .1s ease;
+  }
+  .next:active { transform: translateY(2px); }
+  .hidden { display: none !important; }
+
+  /* おわり画面 */
+  .result {
+    text-align: center; padding: 48px 24px;
+    background: rgba(255,255,255,.82); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 28px;
+    box-shadow: 0 16px 40px rgba(170,130,190,.16);
+  }
+  .result .big { font-size: 76px; margin: 6px 0; }
+  .result .msg {
+    font-size: 26px; font-weight: 700; letter-spacing: 1px; margin: 12px 0 20px;
+    background: linear-gradient(90deg,#c084d9,#f778a8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+</style>
+
+<div id="app">
+  <div class="top">
+    <div class="brand">
+      <div class="en">Study Time</div>
+      <div class="title">スタディ</div>
+    </div>
+    <div class="stars">✨ <span id="starCount">0</span></div>
+  </div>
+
+  <!-- ホーム -->
+  <div id="home">
+    <div class="grid">
+      <button class="subject s-math"    onclick="startQuiz('math')"><span class="emoji">🧮</span>算数<span class="sub">MATH</span></button>
+      <button class="subject s-kanji"   onclick="startQuiz('kanji')"><span class="emoji">🖋️</span>漢字<span class="sub">KANJI</span></button>
+      <button class="subject s-english" onclick="startQuiz('english')"><span class="emoji">🔠</span>英語<span class="sub">ENGLISH</span></button>
+      <button class="subject s-society" onclick="startQuiz('society')"><span class="emoji">🌏</span>社会<span class="sub">SOCIAL</span></button>
+      <button class="subject s-science" onclick="startQuiz('science')"><span class="emoji">🔬</span>理科<span class="sub">SCIENCE</span></button>
+      <button class="subject s-mix"     onclick="startQuiz('mix')"><span class="emoji">🎀</span>ミックス<span class="sub">MIX</span></button>
+    </div>
+    <div class="home-msg">すきな教科をえらんでね ♡</div>
+  </div>
+
+  <!-- クイズ -->
+  <div id="quiz" class="hidden">
+    <div class="quiz-head">
+      <button class="back" onclick="goHome()">← もどる</button>
+      <div class="quiz-title" id="quizTitle"></div>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="question" id="question"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next hidden" id="nextBtn" onclick="nextQuestion()">つぎへ →</button>
+  </div>
+
+  <!-- おわり -->
+  <div id="end" class="hidden">
+    <div class="result">
+      <div class="big" id="endEmoji">🎉</div>
+      <div class="msg" id="endMsg"></div>
+      <div style="font-size:22px;color:#666" id="endStars"></div>
+      <button class="next" style="margin-top:24px" onclick="goHome()">ホームへ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== データ ===== */
+
+// かん字：読みクイズ（問題＝漢字、答え＝読み）
+const KANJI = [
+  ["山","やま"],["川","かわ"],["花","はな"],["空","そら"],["月","つき"],
+  ["犬","いぬ"],["雨","あめ"],["音","おと"],["草","くさ"],["星","ほし"],
+  ["海","うみ"],["雪","ゆき"],["風","かぜ"],["森","もり"],["虫","むし"],
+  ["家","いえ"],["魚","さかな"],["鳥","とり"],["馬","うま"],["golf","x"], // dummy removed below
+  ["顔","かお"],["体","からだ"],["名前","なまえ"],["道","みち"],["店","みせ"],
+];
+// ↑ダミー除去
+const KANJI_CLEAN = KANJI.filter(k => k[1] !== "x");
+
+// えいご：英語→日本語
+const ENGLISH = [
+  ["apple","りんご"],["dog","いぬ"],["cat","ねこ"],["red","あか"],["blue","あお"],
+  ["book","ほん"],["water","みず"],["fish","さかな"],["bird","とり"],["hand","て"],
+  ["sun","たいよう"],["moon","つき"],["star","ほし"],["milk","ぎゅうにゅう"],["egg","たまご"],
+  ["school","がっこう"],["friend","ともだち"],["happy","うれしい"],["big","おおきい"],["small","ちいさい"],
+];
+
+// しゃかい：4択クイズ
+const SOCIETY = [
+  ["日本の首都はどこ？", "東京", ["大阪","京都","札幌"]],
+  ["富士山があるのはどの国？", "日本", ["アメリカ","中国","フランス"]],
+  ["お金をあずける場所は？", "銀行", ["病院","学校","駅"]],
+  ["火事のときによぶ番号は？", "119", ["110","117","118"]],
+  ["けいさつをよぶ番号は？", "110", ["119","117","104"]],
+  ["日本で一番大きい湖は？", "びわ湖", ["十和田湖","かすみがうら","猪苗代湖"]],
+  ["手紙をとどけてくれるのは？", "ゆうびんきょく", ["としょかん","こうばん","びょういん"]],
+  ["1年は何か月？", "12か月", ["10か月","11か月","24か月"]],
+  ["日本のお金の単位は？", "円", ["ドル","ウォン","ユーロ"]],
+  ["せかいで一番人口が多いのは？", "アジア", ["ヨーロッパ","アフリカ","南アメリカ"]],
+];
+
+// りか：4択クイズ
+const SCIENCE = [
+  ["ちょうちょになる前は何？", "さなぎ", ["たまご","おたまじゃくし","せいちゅう"]],
+  ["水をひやすと何になる？", "こおり", ["ゆげ","おゆ","あわ"]],
+  ["虹（にじ）は何色？", "7色", ["3色","5色","10色"]],
+  ["太陽が出るのはいつ？", "朝", ["よる","真夜中","なし"]],
+  ["植物が育つのに必要なのは？", "光と水", ["やみ","こおり","すな"]],
+  ["カブトムシの足は何本？", "6本", ["4本","8本","10本"]],
+  ["地球で一番近い星は？", "太陽", ["月","火星","北極星"]],
+  ["じしゃくがくっつくのは？", "てつ", ["き","かみ","ガラス"]],
+  ["おたまじゃくしは大きくなると？", "カエル", ["さかな","とかげ","へび"]],
+  ["雲から降ってくるのは？", "雨", ["すな","はっぱ","ひかり"]],
+];
+
+/* ===== しくみ ===== */
+const SUBJECTS = {
+  math:    {name:"算数",     color:"#ff922b"},
+  kanji:   {name:"漢字",     color:"#e64980"},
+  english: {name:"英語",     color:"#4dabf7"},
+  society: {name:"社会",     color:"#51cf66"},
+  science: {name:"理科",     color:"#9775fa"},
+  mix:     {name:"ミックス", color:"#868e96"},
+};
+const TOTAL = 10; // 1回の問題数
+
+let stars = Number(localStorage.getItem("benkyo_stars") || 0);
+let quizList = [];
+let idx = 0;
+let gotThisSession = 0;
+
+document.getElementById("starCount").textContent = stars;
+
+function pick(arr, n){ // ランダムにn個
+  const c = arr.slice();
+  for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}
+  return c.slice(0,n);
+}
+function shuffle(a){ return pick(a, a.length); }
+
+// 各教科から1問つくる → {q, answer, choices[]}
+function makeMath(){
+  const t = Math.floor(Math.random()*3); // 0たし 1ひき 2かけ
+  let a,b,q,ans;
+  if(t===0){ a=rnd(1,20); b=rnd(1,20); q=`${a} + ${b} = ?`; ans=a+b; }
+  else if(t===1){ a=rnd(1,20); b=rnd(1,a); q=`${a} − ${b} = ?`; ans=a-b; }
+  else { a=rnd(1,9); b=rnd(1,9); q=`${a} × ${b} = ?`; ans=a*b; }
+  const set = new Set([ans]);
+  while(set.size<4){ set.add(ans + rnd(-5,5)===ans ? ans+rnd(1,6) : ans+rnd(-6,6)); }
+  const choices = shuffle([...set]).map(String);
+  return {q, answer:String(ans), choices};
+}
+function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+function makeFromPairs(pairs, promptFn){
+  const [item] = pick(pairs,1);
+  const q = promptFn(item);
+  const ans = item[1];
+  const wrongs = pick(pairs.filter(p=>p[1]!==ans),3).map(p=>p[1]);
+  const choices = shuffle([ans,...wrongs]);
+  return {q, answer:ans, choices};
+}
+function makeQuiz4(pool){
+  const [item] = pick(pool,1);
+  const q = item[0], ans = item[1];
+  const choices = shuffle([ans, ...item[2]]);
+  return {q, answer:ans, choices};
+}
+
+function genOne(subject){
+  let s = subject;
+  if(s==="mix"){ s = pick(["math","kanji","english","society","science"],1)[0]; }
+  if(s==="math")    return makeMath();
+  if(s==="kanji")   return makeFromPairs(KANJI_CLEAN, it=>`「${it[0]}」の読みは？`);
+  if(s==="english") return makeFromPairs(ENGLISH, it=>`${it[0]} の いみは？`);
+  if(s==="society") return makeQuiz4(SOCIETY);
+  if(s==="science") return makeQuiz4(SCIENCE);
+}
+
+/* ===== 画面 ===== */
+function show(id){ ["home","quiz","end"].forEach(x=>document.getElementById(x).classList.toggle("hidden", x!==id)); }
+
+function startQuiz(subject){
+  quizList = [];
+  for(let i=0;i<TOTAL;i++) quizList.push(genOne(subject));
+  idx = 0; gotThisSession = 0;
+  document.getElementById("quizTitle").textContent = SUBJECTS[subject].name;
+  show("quiz");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const item = quizList[idx];
+  document.getElementById("bar").style.width = (idx/TOTAL*100)+"%";
+  document.getElementById("question").textContent = item.q;
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("nextBtn").classList.add("hidden");
+  const box = document.getElementById("choices");
+  box.innerHTML = "";
+  item.choices.forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "choice";
+    b.textContent = c;
+    b.onclick = ()=>answer(b, c, item.answer);
+    box.appendChild(b);
+  });
+}
+
+function answer(btn, chosen, correct){
+  const buttons = document.querySelectorAll(".choice");
+  buttons.forEach(b=>b.onclick=null);
+  const fb = document.getElementById("feedback");
+  if(chosen===correct){
+    btn.classList.add("correct");
+    fb.textContent = pick(["せいかい！🎉","すごい！✨","やったね！😊","ばっちり！👍"],1)[0];
+    fb.className = "feedback fb-ok";
+    stars++; gotThisSession++;
+    localStorage.setItem("benkyo_stars", stars);
+    document.getElementById("starCount").textContent = stars;
+  } else {
+    btn.classList.add("wrong");
+    buttons.forEach(b=>{ if(b.textContent===correct) b.classList.add("correct"); });
+    fb.textContent = "おしい！こたえは「"+correct+"」だよ😊";
+    fb.className = "feedback fb-ng";
+  }
+  buttons.forEach(b=>{ if(!b.classList.contains("correct")&&!b.classList.contains("wrong")) b.classList.add("dim"); });
+  document.getElementById("nextBtn").classList.remove("hidden");
+}
+
+function nextQuestion(){
+  idx++;
+  if(idx>=TOTAL){ finish(); return; }
+  renderQuestion();
+}
+
+function finish(){
+  document.getElementById("bar").style.width = "100%";
+  show("end");
+  const e = document.getElementById("endEmoji");
+  const m = document.getElementById("endMsg");
+  if(gotThisSession>=8){ e.textContent="🏆"; m.textContent="よくできました！てんさい！"; }
+  else if(gotThisSession>=5){ e.textContent="🎉"; m.textContent="がんばったね！すごい！"; }
+  else { e.textContent="🌱"; m.textContent="よくちょうせんしたね！えらい！"; }
+  document.getElementById("endStars").textContent = "きょうは ⭐"+gotThisSession+"こ ゲット！";
+}
+
+function goHome(){ show("home"); }
+</script>
