@@ -9,3 +9,6 @@ Desktop.ini
 # 一時ファイル
 *.tmp
 *.log
+
+# 家計簿アプリは独立したリポジトリ（kakeibo-family）で管理
+kakeibo/
