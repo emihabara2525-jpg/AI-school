@@ -1,0 +1,513 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>かいものリスト</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #efe7d6;
+    --accA: #4aa3d4;
+    --accB: #3fbf8f;
+    --card: rgba(255,255,255,.82);
+    --ink: #37454f;
+    --sub: #9a8f78;
+    --line: rgba(120,150,165,.18);
+    --paper: #fffdf5;
+    --rule: #c9dcea;
+    --margin: rgba(224,120,110,.45);
+    --danger: #e8735f;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    background: var(--bg);
+    background-attachment: fixed;
+    color: var(--ink);
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { max-width: 640px; margin: 0 auto; padding: 22px 18px 140px; min-height: 100vh; }
+
+  /* ヘッダー */
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .brand .en { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: #9fc4d6; font-weight: 700; }
+  .title {
+    font-size: 28px; font-weight: 800; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--accA), var(--accB));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-top: 2px;
+  }
+  .room {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--sub);
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(90,140,160,.12);
+  }
+  .room b { color: var(--accA); }
+  .room.linked { color: #2e9e6e; border-color: rgba(63,191,143,.5); background: rgba(63,191,143,.10); }
+  .room.linked #roomName { color: #2e9e6e; }
+
+  /* カテゴリタブ */
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; margin-bottom: 4px; }
+  .tab {
+    flex: 0 0 auto; border: 1px solid var(--line); background: var(--card);
+    border-radius: 999px; padding: 9px 16px; font-size: 14px; font-weight: 700; color: var(--sub);
+    cursor: pointer; transition: .15s;
+  }
+  .tab.on { background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; border-color: transparent; box-shadow: 0 6px 16px rgba(70,160,150,.28); }
+
+  /* リスト（ノート風） */
+  .list {
+    display: flex; flex-direction: column; gap: 0; margin-top: 4px;
+    background: var(--paper);
+    border: 1px solid rgba(150,140,110,.28);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(120,110,70,.14);
+    overflow: hidden;
+  }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    background: transparent; border: none; border-radius: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 14px 16px;
+    box-shadow: none;
+    animation: pop .28s ease;
+  }
+  .item:last-child { border-bottom: none; }
+  @keyframes pop { 0% { transform: translateY(8px) scale(.98); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  .check {
+    width: 30px; height: 30px; flex: 0 0 auto; border-radius: 50%;
+    border: 2px solid #cfe0e8; display: grid; place-items: center;
+    cursor: pointer; font-size: 16px; color: transparent; transition: .15s;
+  }
+  .item.done .check { background: var(--accB); border-color: var(--accB); color: #fff; }
+  .item.done .name { color: #b8c6cd; text-decoration: line-through; }
+  .body { flex: 1; min-width: 0; }
+  .name { font-size: 17px; font-weight: 700; line-height: 1.3; word-break: break-word; }
+  .meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .cat-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(74,163,212,.12); color: var(--accA); cursor: pointer; }
+  .edit-input { width: 100%; font-size: 17px; font-weight: 700; border: none; border-bottom: 2px solid var(--accA); outline: none; background: transparent; color: var(--ink); font-family: inherit; padding: 1px 0 3px; }
+  .del { flex: 0 0 auto; border: none; background: transparent; color: #cdd8de; font-size: 20px; cursor: pointer; padding: 4px 6px; }
+  .del:active { color: var(--danger); }
+
+  .empty { text-align: center; color: var(--sub); padding: 60px 20px; font-size: 15px; line-height: 1.9; background: var(--paper); border: 1px solid rgba(150,140,110,.28); border-radius: 10px; box-shadow: 0 8px 20px rgba(120,110,70,.14); }
+  .empty .big { font-size: 44px; margin-bottom: 8px; }
+
+  .section-label { font-size: 13px; font-weight: 800; color: var(--sub); margin: 22px 4px 8px; letter-spacing: 1px; }
+  .clear-done { display: block; margin: 18px auto 0; background: transparent; border: 1px solid var(--line); color: var(--sub); border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+  /* 下の入力バー */
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,.86); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .dock-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+  .field { flex: 1; display: flex; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 4px 6px 4px 14px; }
+  .field input {
+    flex: 1; border: none; outline: none; font-size: 16px; padding: 12px 4px; background: transparent; color: var(--ink);
+    font-family: inherit;
+  }
+  .add-btn { border: none; background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; font-size: 18px; font-weight: 800; border-radius: 12px; width: 46px; height: 44px; cursor: pointer; }
+  .mic {
+    flex: 0 0 auto; width: 58px; height: 58px; border-radius: 50%;
+    border: none; background: linear-gradient(135deg, var(--accA), var(--accB));
+    color: #fff; font-size: 26px; cursor: pointer;
+    box-shadow: 0 10px 24px rgba(70,160,180,.35);
+    display: grid; place-items: center; transition: .15s;
+  }
+  .mic:active { transform: scale(.94); }
+  .mic.rec { animation: pulse 1.1s infinite; background: linear-gradient(135deg, #ff8a65, #e8735f); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(232,115,95,.5); } 50% { box-shadow: 0 0 0 14px rgba(232,115,95,0); } }
+  .hint { text-align: center; font-size: 12px; color: var(--sub); margin-top: 8px; min-height: 16px; }
+
+  /* カテゴリ選択（追加時） */
+  .catrow { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 10px; }
+  .catrow.hidden { display: none; }
+  .catchip { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; color: var(--sub); cursor: pointer; }
+  .catchip.on { background: rgba(74,163,212,.14); color: var(--accA); border-color: rgba(74,163,212,.4); }
+
+  /* モーダル */
+  .modal { position: fixed; inset: 0; background: rgba(40,60,70,.4); display: none; place-items: center; padding: 24px; z-index: 50; }
+  .modal.show { display: grid; }
+  .sheet { background: #fff; border-radius: 22px; padding: 26px 22px; max-width: 380px; width: 100%; box-shadow: 0 20px 50px rgba(40,70,80,.3); }
+  .sheet h2 { margin: 0 0 6px; font-size: 20px; }
+  .sheet p { margin: 0 0 16px; font-size: 13px; color: var(--sub); line-height: 1.7; }
+  .sheet input { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 13px; font-size: 16px; font-family: inherit; outline: none; margin-bottom: 14px; }
+  .sheet .ok { width: 100%; border: none; background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; font-size: 16px; font-weight: 800; border-radius: 12px; padding: 14px; cursor: pointer; }
+</style>
+
+<div id="app">
+  <div class="top">
+    <div class="brand">
+      <div class="en">Family List</div>
+      <div class="title">かいものリスト</div>
+    </div>
+    <div class="room" id="roomBtn">🏠 <span id="roomName">わが家</span></div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="listArea"></div>
+
+  <div class="dock">
+    <div class="catrow" id="catrow"></div>
+    <div class="dock-inner">
+      <button class="mic" id="mic" title="声で追加">🎤</button>
+      <div class="field">
+        <input id="text" placeholder="牛乳、洗剤 など…" autocomplete="off">
+        <button class="add-btn" id="add">＋</button>
+      </div>
+    </div>
+    <div class="hint" id="hint">🎤ボタンを押して、ほしいものを話してね</div>
+  </div>
+</div>
+
+<div class="modal" id="roomModal">
+  <div class="sheet">
+    <h2>家族のあいことば</h2>
+    <p>家族みんなで<b>同じあいことば</b>を入れると、同じ買い物リストを共有できます。最初の人が決めて、家族に教えてあげてください。<br>（他の家族とかぶらないよう、少し個性のある言葉がおすすめ）</p>
+    <input id="roomInput" placeholder="例：harada-kazoku-2580" maxlength="40">
+    <button class="ok" id="roomSave">この合言葉でつなぐ</button>
+  </div>
+</div>
+
+<!-- Firebase（家族共有） -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCGv89FlKMcfdgYSF9MYYzL3W0Im09bkbo",
+    authDomain: "kaimono-list-63ee9.firebaseapp.com",
+    projectId: "kaimono-list-63ee9",
+    storageBucket: "kaimono-list-63ee9.firebasestorage.app",
+    messagingSenderId: "634167351822",
+    appId: "1:634167351822:web:2bb761bc9cbd62388c7a5f"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.FB = { db, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy };
+    window.dispatchEvent(new Event("fb-ready"));
+  } catch (e) { console.warn("Firebase 初期化に失敗", e); }
+</script>
+
+<script>
+  // ===== カテゴリ定義 =====
+  const CATS = [
+    { id: "all",   label: "すべて", emoji: "🧺" },
+    { id: "food",  label: "食品",   emoji: "🍎" },
+    { id: "daily", label: "消耗品", emoji: "🧻" },
+    { id: "other", label: "その他", emoji: "📦" },
+  ];
+  // 音声・入力からカテゴリを推測するためのキーワード
+  const GUESS = {
+    food:  ["牛乳","たまご","卵","肉","魚","野菜","米","パン","豆腐","納豆","バター","チーズ","ヨーグルト","果物","りんご","バナナ","調味料","醤油","味噌","砂糖","塩","油","小麦粉","冷凍","お菓子","飲","茶","コーヒー","ジュース","水"],
+    daily: ["洗剤","トイレット","ティッシュ","シャンプー","リンス","石鹸","せっけん","歯磨き","歯ブラシ","ラップ","ゴミ袋","ごみ袋","電池","マスク","おむつ","生理","柔軟剤","スポンジ","掃除","キッチンペーパー"],
+  };
+
+  const state = {
+    room: localStorage.getItem("kaimono_room") || "",
+    items: JSON.parse(localStorage.getItem("kaimono_items") || "[]"),
+    filter: "all",
+    addCat: "food",
+    editing: null,
+  };
+
+  const $ = (s) => document.querySelector(s);
+
+  // ===== 共有（Firebase）状態 =====
+  let cloud = false;   // true なら家族共有モード
+  let unsub = null;    // リッスン解除用
+  let firstSnap = true;
+
+  function genId() { return Date.now() + "_" + Math.random().toString(36).slice(2, 6); }
+  function roomKey() { return (state.room || "").trim().replace(/[\/.#$\[\]]/g, "-"); }
+
+  function save() {
+    if (!cloud) localStorage.setItem("kaimono_items", JSON.stringify(state.items));
+  }
+
+  // 家族共有につなぐ（あいことばを鍵にする）
+  function connectRoom() {
+    if (unsub) { unsub(); unsub = null; }
+    firstSnap = true;
+    const key = roomKey();
+    if (!window.FB || !key) {
+      // 共有なし → このPC/スマホの中だけ（ローカル）
+      cloud = false;
+      state.items = JSON.parse(localStorage.getItem("kaimono_items") || "[]");
+      render();
+      return;
+    }
+    cloud = true;
+    const { db, collection, onSnapshot, query, orderBy } = window.FB;
+    const col = collection(db, "lists", key, "items");
+    unsub = onSnapshot(query(col, orderBy("ts", "desc")), (snap) => {
+      // 初回、クラウドが空ならこの端末のリストを引っ越し（1回だけ）
+      if (firstSnap) {
+        firstSnap = false;
+        const flag = "kaimono_migrated_" + key;
+        const local = JSON.parse(localStorage.getItem("kaimono_items") || "[]");
+        if (snap.empty && local.length && !localStorage.getItem(flag)) {
+          localStorage.setItem(flag, "1");
+          local.forEach((it) => cloudAdd({ name: it.name, cat: it.cat, done: !!it.done, ts: it.ts || Date.now() }));
+          return; // 追加後の次のスナップショットで表示
+        }
+      }
+      state.items = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      if (state.editing) return; // 編集中は再描画を控える
+      render();
+    }, (err) => { console.warn("共有エラー", err); });
+    render();
+  }
+
+  function cloudAdd(item) {
+    const { db, collection, addDoc } = window.FB;
+    return addDoc(collection(db, "lists", roomKey(), "items"), item);
+  }
+  function cloudUpdate(id, patch) {
+    const { db, doc, updateDoc } = window.FB;
+    return updateDoc(doc(db, "lists", roomKey(), "items", id), patch);
+  }
+  function cloudDelete(id) {
+    const { db, doc, deleteDoc } = window.FB;
+    return deleteDoc(doc(db, "lists", roomKey(), "items", id));
+  }
+
+  function guessCat(name) {
+    for (const k of GUESS.food)  if (name.includes(k)) return "food";
+    for (const k of GUESS.daily) if (name.includes(k)) return "daily";
+    return null;
+  }
+
+  function catInfo(id) { return CATS.find((c) => c.id === id) || CATS[3]; }
+
+  // ===== 描画 =====
+  function renderTabs() {
+    $("#tabs").innerHTML = CATS.map((c) =>
+      `<div class="tab ${state.filter === c.id ? "on" : ""}" data-f="${c.id}">${c.emoji} ${c.label}</div>`
+    ).join("");
+  }
+
+  function renderCatRow() {
+    $("#catrow").innerHTML = CATS.filter((c) => c.id !== "all").map((c) =>
+      `<div class="catchip ${state.addCat === c.id ? "on" : ""}" data-c="${c.id}">${c.emoji} ${c.label}</div>`
+    ).join("");
+  }
+
+  function renderList() {
+    const area = $("#listArea");
+    let items = state.items.slice();
+    if (state.filter !== "all") items = items.filter((i) => i.cat === state.filter);
+
+    const todo = items.filter((i) => !i.done);
+    const done = items.filter((i) => i.done);
+
+    if (items.length === 0) {
+      area.innerHTML = `<div class="empty"><div class="big">🛒</div>まだ何もありません。<br>下の🎤ボタンか＋で追加してね。</div>`;
+      return;
+    }
+
+    let html = `<div class="list">` + todo.map(itemHTML).join("") + `</div>`;
+    if (done.length) {
+      html += `<div class="section-label">✓ 買ったもの（${done.length}）</div>`;
+      html += `<div class="list">` + done.map(itemHTML).join("") + `</div>`;
+      html += `<button class="clear-done" id="clearDone">買ったものを消す</button>`;
+    }
+    area.innerHTML = html;
+  }
+
+  function itemHTML(i) {
+    const c = catInfo(i.cat);
+    const nameHtml = state.editing === i.id
+      ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
+      : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
+    return `<div class="item ${i.done ? "done" : ""}" data-id="${i.id}">
+      <div class="check" data-act="toggle">✓</div>
+      <div class="body">
+        ${nameHtml}
+        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span></div>
+      </div>
+      <button class="del" data-act="del">×</button>
+    </div>`;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  function render() { renderTabs(); renderCatRow(); renderList(); updateRoom(); }
+
+  function updateRoom() {
+    const btn = $("#roomBtn");
+    if (cloud && state.room) {
+      $("#roomName").textContent = state.room;
+      btn.firstChild.textContent = "🔗 ";
+      btn.classList.add("linked");
+    } else {
+      $("#roomName").textContent = state.room || "あいことば";
+      btn.firstChild.textContent = "🏠 ";
+      btn.classList.remove("linked");
+    }
+  }
+
+  // ===== 追加 =====
+  function addItem(name) {
+    name = name.trim();
+    if (!name) return;
+    // 「牛乳と卵」のように読点や「と」で区切って複数追加
+    const parts = name.split(/[、,，]|\s+と\s+|\n/).map((s) => s.trim()).filter(Boolean);
+    (parts.length ? parts : [name]).forEach((p) => {
+      const guessed = guessCat(p);
+      const item = { name: p, cat: guessed || state.addCat, done: false, ts: Date.now() };
+      if (cloud) { cloudAdd(item); }
+      else { item.id = genId(); state.items.unshift(item); }
+    });
+    if (!cloud) { save(); renderList(); }
+  }
+
+  // ===== イベント =====
+  $("#tabs").addEventListener("click", (e) => {
+    const t = e.target.closest(".tab"); if (!t) return;
+    state.filter = t.dataset.f; renderTabs(); renderList();
+  });
+
+  $("#catrow").addEventListener("click", (e) => {
+    const c = e.target.closest(".catchip"); if (!c) return;
+    state.addCat = c.dataset.c; renderCatRow();
+  });
+
+  $("#listArea").addEventListener("click", (e) => {
+    const el = e.target.closest("[data-act]"); if (!el) return;
+    const card = e.target.closest(".item");
+    const id = card.dataset.id;
+    const item = state.items.find((i) => i.id === id);
+    if (!item) return;
+    if (el.dataset.act === "toggle") {
+      if (cloud) { cloudUpdate(id, { done: !item.done }); }
+      else { item.done = !item.done; save(); renderList(); }
+    }
+    if (el.dataset.act === "del") {
+      if (cloud) { cloudDelete(id); }
+      else { state.items = state.items.filter((i) => i.id !== id); save(); renderList(); }
+    }
+    if (el.dataset.act === "cat") {
+      const order = ["food", "daily", "other"];
+      const next = order[(order.indexOf(item.cat) + 1) % order.length];
+      if (cloud) { cloudUpdate(id, { cat: next }); }
+      else { item.cat = next; save(); renderList(); }
+    }
+    if (el.dataset.act === "edit") {
+      state.editing = id; renderList();
+      const inp = document.querySelector(`.item[data-id="${id}"] .edit-input`);
+      if (inp) { inp.focus(); inp.select(); }
+    }
+  });
+
+  // 名前の編集を保存
+  function commitEdit(id, val) {
+    const item = state.items.find((i) => i.id === id);
+    state.editing = null;
+    const v = val.trim();
+    if (item && v) {
+      const g = guessCat(v);
+      const patch = g ? { name: v, cat: g } : { name: v };
+      if (cloud) { cloudUpdate(id, patch); renderList(); return; }
+      Object.assign(item, patch);
+    }
+    save(); renderList();
+  }
+  $("#listArea").addEventListener("keydown", (e) => {
+    const inp = e.target.closest(".edit-input"); if (!inp) return;
+    if (e.key === "Enter") { e.preventDefault(); commitEdit(e.target.closest(".item").dataset.id, inp.value); }
+    if (e.key === "Escape") { state.editing = null; renderList(); }
+  });
+  $("#listArea").addEventListener("focusout", (e) => {
+    const inp = e.target.closest(".edit-input"); if (!inp) return;
+    commitEdit(e.target.closest(".item").dataset.id, inp.value);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "clearDone") {
+      if (cloud) { state.items.filter((i) => i.done).forEach((i) => cloudDelete(i.id)); }
+      else { state.items = state.items.filter((i) => !i.done); save(); renderList(); }
+    }
+  });
+
+  $("#add").addEventListener("click", () => {
+    addItem($("#text").value); $("#text").value = ""; $("#text").focus();
+  });
+  $("#text").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { addItem($("#text").value); $("#text").value = ""; }
+  });
+
+  // ===== あいことばモーダル =====
+  $("#roomBtn").addEventListener("click", () => {
+    $("#roomInput").value = state.room || ("kazoku-" + Math.floor(1000 + Math.random() * 9000));
+    $("#roomModal").classList.add("show");
+    $("#roomInput").focus(); $("#roomInput").select();
+  });
+  $("#roomSave").addEventListener("click", () => {
+    state.room = $("#roomInput").value.trim();
+    localStorage.setItem("kaimono_room", state.room);
+    $("#roomModal").classList.remove("show");
+    connectRoom();
+  });
+  $("#roomModal").addEventListener("click", (e) => {
+    if (e.target.id === "roomModal") $("#roomModal").classList.remove("show");
+  });
+
+  // ===== 音声入力（Web Speech API）=====
+  const mic = $("#mic");
+  const hint = $("#hint");
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false;
+
+  if (!SR) {
+    mic.style.opacity = ".4";
+    mic.addEventListener("click", () => {
+      hint.textContent = "このブラウザは音声入力に未対応。＋で手入力してね（スマホのChromeやSafari推奨）";
+    });
+  } else {
+    rec = new SR();
+    rec.lang = "ja-JP";
+    rec.interimResults = true;
+    rec.continuous = false;
+
+    mic.addEventListener("click", () => {
+      if (listening) { rec.stop(); return; }
+      try { rec.start(); } catch (_) {}
+    });
+
+    rec.onstart = () => { listening = true; mic.classList.add("rec"); hint.textContent = "🎤 聞いています…話してね"; };
+    rec.onerror = (e) => {
+      listening = false; mic.classList.remove("rec");
+      hint.textContent = e.error === "not-allowed"
+        ? "マイクの使用がブロックされています。ブラウザの設定で許可してね"
+        : "うまく聞き取れませんでした。もう一度どうぞ";
+    };
+    rec.onend = () => { listening = false; mic.classList.remove("rec"); setTimeout(resetHint, 2500); };
+    rec.onresult = (e) => {
+      let txt = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript;
+      if (e.results[e.results.length - 1].isFinal) {
+        const clean = txt.replace(/[。.\s]+$/,"").trim();
+        if (clean) { addItem(clean); hint.textContent = `「${clean}」を追加しました ✓`; }
+      } else {
+        hint.textContent = "🎤 " + txt;
+      }
+    };
+  }
+  function resetHint() { if (!listening) hint.textContent = "🎤ボタンを押して、ほしいものを話してね"; }
+
+  // ===== 初期表示 & 共有接続 =====
+  render();
+  function startCloud() { if (state.room) connectRoom(); }
+  if (window.FB) startCloud();
+  else window.addEventListener("fb-ready", startCloud, { once: true });
+</script>
