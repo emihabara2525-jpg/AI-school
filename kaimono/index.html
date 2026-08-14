@@ -58,6 +58,18 @@
   .room.linked { color: #2e9e6e; border-color: rgba(63,191,143,.5); background: rgba(63,191,143,.10); }
   .room.linked #roomName { color: #2e9e6e; }
 
+  /* かいもの／ストック 切り替え */
+  .viewtoggle { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px; margin-bottom: 14px; box-shadow: 0 6px 16px rgba(90,140,160,.10); }
+  .vt { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 11px 8px; font-size: 15px; font-weight: 800; color: var(--sub); cursor: pointer; font-family: inherit; transition: .15s; }
+  .vt.on { background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; box-shadow: 0 6px 14px rgba(70,160,150,.28); }
+
+  /* ストックの状態ボタン */
+  .stt { flex: 0 0 auto; border: none; border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; min-width: 84px; }
+  .item.s-ok  .stt { background: rgba(63,191,143,.16); color: #2e9e6e; }
+  .item.s-low .stt { background: rgba(240,180,60,.20); color: #b8860b; }
+  .item.s-out .stt { background: rgba(232,115,95,.18); color: #d0432c; }
+  .item.s-out .name { color: #d0432c; }
+
   /* カテゴリタブ */
   .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; margin-bottom: 4px; }
   .tab {
@@ -158,6 +170,11 @@
     <div class="room" id="roomBtn">🏠 <span id="roomName">わが家</span></div>
   </div>
 
+  <div class="viewtoggle">
+    <button class="vt on" data-v="shop">🛒 かいもの</button>
+    <button class="vt" data-v="stock">📦 ストック</button>
+  </div>
+
   <div class="tabs" id="tabs"></div>
 
   <div id="listArea"></div>
@@ -224,41 +241,56 @@
   const state = {
     room: localStorage.getItem("kaimono_room") || "",
     items: JSON.parse(localStorage.getItem("kaimono_items") || "[]"),
+    stock: JSON.parse(localStorage.getItem("kaimono_stock") || "[]"),
+    view: "shop",      // "shop"（かいもの）/ "stock"（ストック）
     filter: "all",
     addCat: "food",
     editing: null,
   };
 
+  // ストックの残量ステータス（タップで ok→low→out→ok）
+  const STATUS = {
+    ok:  { label: "🟢 十分ある", next: "low" },
+    low: { label: "🟡 そろそろ", next: "out" },
+    out: { label: "🔴 ない",     next: "ok"  },
+  };
+
   const $ = (s) => document.querySelector(s);
 
   // ===== 共有（Firebase）状態 =====
-  let cloud = false;   // true なら家族共有モード
-  let unsub = null;    // リッスン解除用
+  let cloud = false;        // true なら家族共有モード
+  let unsubItems = null;    // 買い物リストのリッスン解除
+  let unsubStock = null;    // ストックのリッスン解除
   let firstSnap = true;
 
   function genId() { return Date.now() + "_" + Math.random().toString(36).slice(2, 6); }
   function roomKey() { return (state.room || "").trim().replace(/[\/.#$\[\]]/g, "-"); }
 
   function save() {
-    if (!cloud) localStorage.setItem("kaimono_items", JSON.stringify(state.items));
+    if (!cloud) {
+      localStorage.setItem("kaimono_items", JSON.stringify(state.items));
+      localStorage.setItem("kaimono_stock", JSON.stringify(state.stock));
+    }
   }
 
   // 家族共有につなぐ（あいことばを鍵にする）
   function connectRoom() {
-    if (unsub) { unsub(); unsub = null; }
+    if (unsubItems) { unsubItems(); unsubItems = null; }
+    if (unsubStock) { unsubStock(); unsubStock = null; }
     firstSnap = true;
     const key = roomKey();
     if (!window.FB || !key) {
       // 共有なし → このPC/スマホの中だけ（ローカル）
       cloud = false;
       state.items = JSON.parse(localStorage.getItem("kaimono_items") || "[]");
+      state.stock = JSON.parse(localStorage.getItem("kaimono_stock") || "[]");
       render();
       return;
     }
     cloud = true;
     const { db, collection, onSnapshot, query, orderBy } = window.FB;
-    const col = collection(db, "lists", key, "items");
-    unsub = onSnapshot(query(col, orderBy("ts", "desc")), (snap) => {
+    // 買い物リスト
+    unsubItems = onSnapshot(query(collection(db, "lists", key, "items"), orderBy("ts", "desc")), (snap) => {
       // 初回、クラウドが空ならこの端末のリストを引っ越し（1回だけ）
       if (firstSnap) {
         firstSnap = false;
@@ -266,28 +298,34 @@
         const local = JSON.parse(localStorage.getItem("kaimono_items") || "[]");
         if (snap.empty && local.length && !localStorage.getItem(flag)) {
           localStorage.setItem(flag, "1");
-          local.forEach((it) => cloudAdd({ name: it.name, cat: it.cat, done: !!it.done, ts: it.ts || Date.now() }));
+          local.forEach((it) => cloudAdd("items", { name: it.name, cat: it.cat, done: !!it.done, ts: it.ts || Date.now() }));
           return; // 追加後の次のスナップショットで表示
         }
       }
       state.items = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
       if (state.editing) return; // 編集中は再描画を控える
-      render();
-    }, (err) => { console.warn("共有エラー", err); });
+      renderList();
+    }, (err) => { console.warn("共有エラー(items)", err); });
+    // ストック
+    unsubStock = onSnapshot(query(collection(db, "lists", key, "stock"), orderBy("ts", "desc")), (snap) => {
+      state.stock = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      if (state.editing) return;
+      renderList();
+    }, (err) => { console.warn("共有エラー(stock)", err); });
     render();
   }
 
-  function cloudAdd(item) {
+  function cloudAdd(coll, item) {
     const { db, collection, addDoc } = window.FB;
-    return addDoc(collection(db, "lists", roomKey(), "items"), item);
+    return addDoc(collection(db, "lists", roomKey(), coll), item);
   }
-  function cloudUpdate(id, patch) {
+  function cloudUpdate(coll, id, patch) {
     const { db, doc, updateDoc } = window.FB;
-    return updateDoc(doc(db, "lists", roomKey(), "items", id), patch);
+    return updateDoc(doc(db, "lists", roomKey(), coll, id), patch);
   }
-  function cloudDelete(id) {
+  function cloudDelete(coll, id) {
     const { db, doc, deleteDoc } = window.FB;
-    return deleteDoc(doc(db, "lists", roomKey(), "items", id));
+    return deleteDoc(doc(db, "lists", roomKey(), coll, id));
   }
 
   function guessCat(name) {
@@ -312,6 +350,7 @@
   }
 
   function renderList() {
+    if (state.view === "stock") return renderStock();
     const area = $("#listArea");
     let items = state.items.slice();
     if (state.filter !== "all") items = items.filter((i) => i.cat === state.filter);
@@ -333,6 +372,48 @@
     area.innerHTML = html;
   }
 
+  function renderStock() {
+    const area = $("#listArea");
+    if (state.stock.length === 0) {
+      area.innerHTML = `<div class="empty"><div class="big">📦</div>常備するものを登録しましょう。<br>洗剤・米・トイレットペーパー など、下から追加してね。<br><span style="font-size:13px;opacity:.85">「🔴ない」にすると自動で買い物リストに入ります</span></div>`;
+      return;
+    }
+    let items = state.stock.slice();
+    if (state.filter !== "all") items = items.filter((i) => i.cat === state.filter);
+    const rank = { out: 0, low: 1, ok: 2 };
+    items.sort((a, b) => (rank[a.status] ?? 2) - (rank[b.status] ?? 2));
+    if (items.length === 0) {
+      area.innerHTML = `<div class="empty"><div class="big">📦</div>このカテゴリのストックはありません。</div>`;
+      return;
+    }
+    area.innerHTML = `<div class="list">` + items.map(stockHTML).join("") + `</div>`;
+  }
+
+  function stockHTML(i) {
+    const c = catInfo(i.cat);
+    const st = STATUS[i.status] || STATUS.ok;
+    const nameHtml = state.editing === i.id
+      ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
+      : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
+    return `<div class="item stock s-${i.status || "ok"}" data-id="${i.id}">
+      <button class="stt" data-act="status">${st.label}</button>
+      <div class="body">
+        ${nameHtml}
+        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span></div>
+      </div>
+      <button class="del" data-act="del">×</button>
+    </div>`;
+  }
+
+  // 買い物リストへ（重複は追加しない）
+  function addToShop(name, cat) {
+    if (state.items.some((i) => !i.done && i.name === name)) return;
+    const item = { name, cat: cat || guessCat(name) || "other", done: false, ts: Date.now() };
+    if (cloud) { cloudAdd("items", item); }
+    else { item.id = genId(); state.items.unshift(item); save(); }
+    const h = $("#hint"); if (h) h.textContent = `✅ 「${name}」を買い物リストに追加しました`;
+  }
+
   function itemHTML(i) {
     const c = catInfo(i.cat);
     const nameHtml = state.editing === i.id
@@ -352,7 +433,18 @@
     return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  function render() { renderTabs(); renderCatRow(); renderList(); updateRoom(); }
+  function render() { renderTabs(); renderCatRow(); renderList(); updateRoom(); updateDock(); }
+
+  function updateDock() {
+    const t = $("#text"); const h = $("#hint");
+    if (state.view === "stock") {
+      t.placeholder = "洗剤、米、トイレットペーパー…";
+      if (!listening) h.textContent = "常備するものを追加。🟢🟡🔴をタップで残量を管理";
+    } else {
+      t.placeholder = "牛乳、洗剤 など…";
+      if (!listening) h.textContent = "🎤ボタンを押して、ほしいものを話してね";
+    }
+  }
 
   function updateRoom() {
     const btn = $("#roomBtn");
@@ -373,11 +465,18 @@
     if (!name) return;
     // 「牛乳と卵」のように読点や「と」で区切って複数追加
     const parts = name.split(/[、,，]|\s+と\s+|\n/).map((s) => s.trim()).filter(Boolean);
-    (parts.length ? parts : [name]).forEach((p) => {
+    const list = parts.length ? parts : [name];
+    list.forEach((p) => {
       const guessed = guessCat(p);
-      const item = { name: p, cat: guessed || state.addCat, done: false, ts: Date.now() };
-      if (cloud) { cloudAdd(item); }
-      else { item.id = genId(); state.items.unshift(item); }
+      if (state.view === "stock") {
+        const item = { name: p, cat: guessed || state.addCat, status: "ok", ts: Date.now() };
+        if (cloud) { cloudAdd("stock", item); }
+        else { item.id = genId(); state.stock.unshift(item); }
+      } else {
+        const item = { name: p, cat: guessed || state.addCat, done: false, ts: Date.now() };
+        if (cloud) { cloudAdd("items", item); }
+        else { item.id = genId(); state.items.unshift(item); }
+      }
     });
     if (!cloud) { save(); renderList(); }
   }
@@ -395,25 +494,38 @@
 
   $("#listArea").addEventListener("click", (e) => {
     const el = e.target.closest("[data-act]"); if (!el) return;
-    const card = e.target.closest(".item");
-    const id = card.dataset.id;
-    const item = state.items.find((i) => i.id === id);
+    const id = e.target.closest(".item").dataset.id;
+    const coll = state.view === "stock" ? "stock" : "items";
+    const arr = state.view === "stock" ? state.stock : state.items;
+    const item = arr.find((i) => i.id === id);
     if (!item) return;
-    if (el.dataset.act === "toggle") {
-      if (cloud) { cloudUpdate(id, { done: !item.done }); }
+    const act = el.dataset.act;
+
+    if (act === "toggle") { // 買い物リスト：買ったチェック
+      if (cloud) { cloudUpdate("items", id, { done: !item.done }); }
       else { item.done = !item.done; save(); renderList(); }
     }
-    if (el.dataset.act === "del") {
-      if (cloud) { cloudDelete(id); }
-      else { state.items = state.items.filter((i) => i.id !== id); save(); renderList(); }
+    if (act === "status") { // ストック：残量をタップで切替
+      const next = (STATUS[item.status] || STATUS.ok).next;
+      if (cloud) { cloudUpdate("stock", id, { status: next }); }
+      else { item.status = next; save(); renderList(); }
+      if (next === "low" || next === "out") addToShop(item.name, item.cat);
     }
-    if (el.dataset.act === "cat") {
+    if (act === "del") {
+      if (cloud) { cloudDelete(coll, id); }
+      else {
+        if (coll === "stock") state.stock = state.stock.filter((i) => i.id !== id);
+        else state.items = state.items.filter((i) => i.id !== id);
+        save(); renderList();
+      }
+    }
+    if (act === "cat") {
       const order = ["food", "daily", "other"];
       const next = order[(order.indexOf(item.cat) + 1) % order.length];
-      if (cloud) { cloudUpdate(id, { cat: next }); }
+      if (cloud) { cloudUpdate(coll, id, { cat: next }); }
       else { item.cat = next; save(); renderList(); }
     }
-    if (el.dataset.act === "edit") {
+    if (act === "edit") {
       state.editing = id; renderList();
       const inp = document.querySelector(`.item[data-id="${id}"] .edit-input`);
       if (inp) { inp.focus(); inp.select(); }
@@ -422,13 +534,15 @@
 
   // 名前の編集を保存
   function commitEdit(id, val) {
-    const item = state.items.find((i) => i.id === id);
+    const coll = state.view === "stock" ? "stock" : "items";
+    const arr = state.view === "stock" ? state.stock : state.items;
+    const item = arr.find((i) => i.id === id);
     state.editing = null;
     const v = val.trim();
     if (item && v) {
       const g = guessCat(v);
       const patch = g ? { name: v, cat: g } : { name: v };
-      if (cloud) { cloudUpdate(id, patch); renderList(); return; }
+      if (cloud) { cloudUpdate(coll, id, patch); renderList(); return; }
       Object.assign(item, patch);
     }
     save(); renderList();
@@ -445,9 +559,17 @@
 
   document.addEventListener("click", (e) => {
     if (e.target.id === "clearDone") {
-      if (cloud) { state.items.filter((i) => i.done).forEach((i) => cloudDelete(i.id)); }
+      if (cloud) { state.items.filter((i) => i.done).forEach((i) => cloudDelete("items", i.id)); }
       else { state.items = state.items.filter((i) => !i.done); save(); renderList(); }
     }
+  });
+
+  // ===== かいもの／ストック 切り替え =====
+  document.querySelector(".viewtoggle").addEventListener("click", (e) => {
+    const b = e.target.closest(".vt"); if (!b) return;
+    state.view = b.dataset.v; state.editing = null; state.filter = "all";
+    document.querySelectorAll(".vt").forEach((x) => x.classList.toggle("on", x.dataset.v === state.view));
+    render();
   });
 
   $("#add").addEventListener("click", () => {
