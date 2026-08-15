@@ -37,7 +37,7 @@
     touch-action: manipulation;
     -webkit-font-smoothing: antialiased;
   }
-  #app { max-width: 640px; margin: 0 auto; padding: 22px 18px 140px; min-height: 100vh; }
+  #app { max-width: 640px; margin: 0 auto; padding: 22px 18px 150px; min-height: 100vh; }
 
   /* ヘッダー */
   .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
@@ -67,7 +67,7 @@
   .stock-head, .item.stock, .item.shop { grid-template-columns: 34px 58px 1fr 50px 22px; gap: 6px; }
   .stock-head { display: grid; padding: 2px 12px 8px; font-size: 11px; font-weight: 800; color: var(--sub); }
   .stock-head span:nth-child(4) { text-align: right; }
-  .item.stock, .item.shop { display: grid; align-items: center; padding: 12px; }
+  .item.stock, .item.shop { display: grid; align-items: center; padding: 8px 12px; }
   .stt { border: none; border-radius: 50%; width: 34px; height: 34px; padding: 0; font-size: 17px; cursor: pointer; font-family: inherit; display: grid; place-items: center; }
   .item.s-ok  .stt { background: rgba(63,191,143,.16); }
   .item.s-low .stt { background: rgba(240,180,60,.22); }
@@ -190,7 +190,6 @@
   <div id="listArea"></div>
 
   <div class="dock">
-    <div class="catrow" id="catrow"></div>
     <div class="dock-inner">
       <button class="mic" id="mic" title="声で追加">🎤</button>
       <div class="field">
@@ -370,12 +369,6 @@
     ).join("");
   }
 
-  function renderCatRow() {
-    $("#catrow").innerHTML = CATS.filter((c) => c.id !== "all").map((c) =>
-      `<div class="catchip ${state.addCat === c.id ? "on" : ""}" data-c="${c.id}">${c.emoji} ${c.label}</div>`
-    ).join("");
-  }
-
   function renderList() {
     if (state.view === "stock") return renderStock();
     const area = $("#listArea");
@@ -460,7 +453,7 @@
     return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  function render() { renderTabs(); renderCatRow(); renderList(); updateRoom(); updateDock(); }
+  function render() { renderTabs(); renderList(); updateRoom(); updateDock(); }
 
   function updateDock() {
     const t = $("#text"); const h = $("#hint");
@@ -494,13 +487,13 @@
     const parts = name.split(/[、,，]|\s+と\s+|\n/).map((s) => s.trim()).filter(Boolean);
     const list = parts.length ? parts : [name];
     list.forEach((p) => {
-      const guessed = guessCat(p);
+      const guessed = guessCat(p) || "other";
       if (state.view === "stock") {
-        const item = { name: p, cat: guessed || state.addCat, status: "ok", ts: Date.now() };
+        const item = { name: p, cat: guessed, status: "ok", ts: Date.now() };
         if (cloud) { cloudAdd("stock", item); }
         else { item.id = genId(); state.stock.unshift(item); }
       } else {
-        const item = { name: p, cat: guessed || state.addCat, done: false, ts: Date.now() };
+        const item = { name: p, cat: guessed, done: false, ts: Date.now() };
         if (cloud) { cloudAdd("items", item); }
         else { item.id = genId(); state.items.unshift(item); }
       }
@@ -512,11 +505,6 @@
   $("#tabs").addEventListener("click", (e) => {
     const t = e.target.closest(".tab"); if (!t) return;
     state.filter = t.dataset.f; renderTabs(); renderList();
-  });
-
-  $("#catrow").addEventListener("click", (e) => {
-    const c = e.target.closest(".catchip"); if (!c) return;
-    state.addCat = c.dataset.c; renderCatRow();
   });
 
   $("#listArea").addEventListener("click", (e) => {
