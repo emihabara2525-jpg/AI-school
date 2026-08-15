@@ -63,20 +63,20 @@
   .vt { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 11px 8px; font-size: 15px; font-weight: 800; color: var(--sub); cursor: pointer; font-family: inherit; transition: .15s; }
   .vt.on { background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; box-shadow: 0 6px 14px rgba(70,160,150,.28); }
 
-  /* ストック（種類｜品名｜前回購入日 の列レイアウト） */
-  .stock-head { display: grid; grid-template-columns: 34px 62px 1fr 84px 22px; gap: 6px; padding: 2px 12px 8px; font-size: 11px; font-weight: 800; color: var(--sub); }
+  /* 種類｜品名｜前回購入日 の列レイアウト（買い物リスト・ストック共通） */
+  .stock-head, .item.stock, .item.shop { grid-template-columns: 34px 58px 1fr 50px 22px; gap: 6px; }
+  .stock-head { display: grid; padding: 2px 12px 8px; font-size: 11px; font-weight: 800; color: var(--sub); }
   .stock-head span:nth-child(4) { text-align: right; }
-  .item.stock { display: grid; grid-template-columns: 34px 62px 1fr 84px 22px; align-items: center; gap: 6px; padding: 12px 12px; }
+  .item.stock, .item.shop { display: grid; align-items: center; padding: 12px; }
   .stt { border: none; border-radius: 50%; width: 34px; height: 34px; padding: 0; font-size: 17px; cursor: pointer; font-family: inherit; display: grid; place-items: center; }
   .item.s-ok  .stt { background: rgba(63,191,143,.16); }
   .item.s-low .stt { background: rgba(240,180,60,.22); }
   .item.s-out .stt { background: rgba(232,115,95,.20); }
   .col-cat { font-size: 12px; font-weight: 700; color: var(--accA); cursor: pointer; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .col-name { min-width: 0; }
-  .col-name .name { font-size: 16px; }
+  .col-name .name { font-size: 15px; }
   .item.s-out .col-name .name { color: #d0432c; }
-  .col-date { font-size: 12px; font-weight: 700; color: var(--sub); text-align: right; line-height: 1.2; }
-  .col-date small { font-weight: 600; opacity: .8; }
+  .col-date { font-size: 12px; font-weight: 700; color: var(--sub); text-align: right; line-height: 1.2; white-space: nowrap; }
   .col-date .nodate { color: #c8d2d8; }
 
   /* カテゴリタブ */
@@ -354,6 +354,14 @@
     const n = Math.round((d0 - d1) / 86400000);
     return n <= 0 ? "今日" : n === 1 ? "昨日" : n + "日前";
   }
+  // 品名からストックの前回購入日を引く（無ければ null）
+  function lastBoughtFor(name) {
+    const s = state.stock.find((x) => x.name === name);
+    return s && s.lastBought ? s.lastBought : null;
+  }
+  function dateCell(ts) {
+    return ts ? fmtDate(ts) : `<span class="nodate">—</span>`;
+  }
 
   // ===== 描画 =====
   function renderTabs() {
@@ -382,7 +390,8 @@
       return;
     }
 
-    let html = `<div class="list">` + todo.map(itemHTML).join("") + `</div>`;
+    let html = `<div class="stock-head"><span></span><span>種類</span><span>品名</span><span>前回購入</span><span></span></div>`;
+    html += `<div class="list">` + todo.map(itemHTML).join("") + `</div>`;
     if (done.length) {
       html += `<div class="section-label">✓ 買ったもの（${done.length}）</div>`;
       html += `<div class="list">` + done.map(itemHTML).join("") + `</div>`;
@@ -405,7 +414,7 @@
       area.innerHTML = `<div class="empty"><div class="big">📦</div>このカテゴリのストックはありません。</div>`;
       return;
     }
-    const head = `<div class="stock-head"><span></span><span>種類</span><span>品名</span><span>前回購入日</span><span></span></div>`;
+    const head = `<div class="stock-head"><span></span><span>種類</span><span>品名</span><span>前回購入</span><span></span></div>`;
     area.innerHTML = head + `<div class="list">` + items.map(stockHTML).join("") + `</div>`;
   }
 
@@ -415,14 +424,11 @@
     const nameHtml = state.editing === i.id
       ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
       : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
-    const dateHtml = i.lastBought
-      ? `${fmtDate(i.lastBought)}<small>（${daysAgo(i.lastBought)}）</small>`
-      : `<span class="nodate">—</span>`;
     return `<div class="item stock s-${i.status || "ok"}" data-id="${i.id}">
       <button class="stt" data-act="status" title="${st.label}">${st.emoji}</button>
       <span class="col-cat" data-act="cat">${c.emoji}${c.label}</span>
       <div class="col-name">${nameHtml}</div>
-      <span class="col-date">${dateHtml}</span>
+      <span class="col-date">${dateCell(i.lastBought)}</span>
       <button class="del" data-act="del">×</button>
     </div>`;
   }
@@ -441,12 +447,11 @@
     const nameHtml = state.editing === i.id
       ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
       : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
-    return `<div class="item ${i.done ? "done" : ""}" data-id="${i.id}">
+    return `<div class="item shop ${i.done ? "done" : ""}" data-id="${i.id}">
       <div class="check" data-act="toggle">✓</div>
-      <div class="body">
-        ${nameHtml}
-        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span></div>
-      </div>
+      <span class="col-cat" data-act="cat">${c.emoji}${c.label}</span>
+      <div class="col-name">${nameHtml}</div>
+      <span class="col-date">${dateCell(lastBoughtFor(i.name))}</span>
       <button class="del" data-act="del">×</button>
     </div>`;
   }
