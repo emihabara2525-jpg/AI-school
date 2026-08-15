@@ -109,6 +109,7 @@
   .name { font-size: 17px; font-weight: 700; line-height: 1.3; word-break: break-word; }
   .meta { font-size: 11px; color: var(--sub); margin-top: 2px; }
   .cat-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(74,163,212,.12); color: var(--accA); cursor: pointer; }
+  .bought { font-size: 11px; font-weight: 700; color: var(--sub); margin-left: 8px; }
   .edit-input { width: 100%; font-size: 17px; font-weight: 700; border: none; border-bottom: 2px solid var(--accA); outline: none; background: transparent; color: var(--ink); font-family: inherit; padding: 1px 0 3px; }
   .del { flex: 0 0 auto; border: none; background: transparent; color: #cdd8de; font-size: 20px; cursor: pointer; padding: 4px 6px; }
   .del:active { color: var(--danger); }
@@ -336,6 +337,15 @@
 
   function catInfo(id) { return CATS.find((c) => c.id === id) || CATS[3]; }
 
+  // 日付の表示（前回買った日）
+  function fmtDate(ts) { const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate(); }
+  function daysAgo(ts) {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    const d1 = new Date(ts); d1.setHours(0, 0, 0, 0);
+    const n = Math.round((d0 - d1) / 86400000);
+    return n <= 0 ? "今日" : n === 1 ? "昨日" : n + "日前";
+  }
+
   // ===== 描画 =====
   function renderTabs() {
     $("#tabs").innerHTML = CATS.map((c) =>
@@ -367,7 +377,7 @@
     if (done.length) {
       html += `<div class="section-label">✓ 買ったもの（${done.length}）</div>`;
       html += `<div class="list">` + done.map(itemHTML).join("") + `</div>`;
-      html += `<button class="clear-done" id="clearDone">買ったものを消す</button>`;
+      html += `<button class="clear-done" id="clearDone">🛒 買ったものをストックへ記録</button>`;
     }
     area.innerHTML = html;
   }
@@ -395,11 +405,13 @@
     const nameHtml = state.editing === i.id
       ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
       : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
+    const bought = i.lastBought
+      ? `<span class="bought">🗓 前回 ${fmtDate(i.lastBought)}（${daysAgo(i.lastBought)}）</span>` : "";
     return `<div class="item stock s-${i.status || "ok"}" data-id="${i.id}">
       <button class="stt" data-act="status">${st.label}</button>
       <div class="body">
         ${nameHtml}
-        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span></div>
+        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span>${bought}</div>
       </div>
       <button class="del" data-act="del">×</button>
     </div>`;
@@ -558,11 +570,29 @@
   });
 
   document.addEventListener("click", (e) => {
-    if (e.target.id === "clearDone") {
-      if (cloud) { state.items.filter((i) => i.done).forEach((i) => cloudDelete("items", i.id)); }
-      else { state.items = state.items.filter((i) => !i.done); save(); renderList(); }
-    }
+    if (e.target.id === "clearDone") clearBought();
   });
+
+  // 買ったものを → ストックへ記録（前回購入日つき）＆リストから消す
+  function clearBought() {
+    const bought = state.items.filter((i) => i.done);
+    if (!bought.length) return;
+    const now = Date.now();
+    bought.forEach((bi) => {
+      const existing = state.stock.find((s) => s.name === bi.name);
+      if (existing) {
+        if (cloud) cloudUpdate("stock", existing.id, { status: "ok", lastBought: now });
+        else { existing.status = "ok"; existing.lastBought = now; }
+      } else {
+        const item = { name: bi.name, cat: bi.cat, status: "ok", lastBought: now, ts: now };
+        if (cloud) cloudAdd("stock", item);
+        else { item.id = genId(); state.stock.unshift(item); }
+      }
+      if (cloud) cloudDelete("items", bi.id);
+    });
+    if (!cloud) { state.items = state.items.filter((i) => !i.done); save(); renderList(); }
+    const h = $("#hint"); if (h) h.textContent = `✅ ${bought.length}件をストックへ記録しました（📦で確認）`;
+  }
 
   // ===== かいもの／ストック 切り替え =====
   document.querySelector(".viewtoggle").addEventListener("click", (e) => {
@@ -636,7 +666,7 @@
       }
     };
   }
-  function resetHint() { if (!listening) hint.textContent = "🎤ボタンを押して、ほしいものを話してね"; }
+  function resetHint() { if (!listening) updateDock(); }
 
   // ===== 初期表示 & 共有接続 =====
   render();
