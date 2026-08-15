@@ -63,12 +63,21 @@
   .vt { flex: 1; border: none; background: transparent; border-radius: 999px; padding: 11px 8px; font-size: 15px; font-weight: 800; color: var(--sub); cursor: pointer; font-family: inherit; transition: .15s; }
   .vt.on { background: linear-gradient(90deg, var(--accA), var(--accB)); color: #fff; box-shadow: 0 6px 14px rgba(70,160,150,.28); }
 
-  /* ストックの状態ボタン */
-  .stt { flex: 0 0 auto; border: none; border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; min-width: 84px; }
-  .item.s-ok  .stt { background: rgba(63,191,143,.16); color: #2e9e6e; }
-  .item.s-low .stt { background: rgba(240,180,60,.20); color: #b8860b; }
-  .item.s-out .stt { background: rgba(232,115,95,.18); color: #d0432c; }
-  .item.s-out .name { color: #d0432c; }
+  /* ストック（種類｜品名｜前回購入日 の列レイアウト） */
+  .stock-head { display: grid; grid-template-columns: 34px 62px 1fr 84px 22px; gap: 6px; padding: 2px 12px 8px; font-size: 11px; font-weight: 800; color: var(--sub); }
+  .stock-head span:nth-child(4) { text-align: right; }
+  .item.stock { display: grid; grid-template-columns: 34px 62px 1fr 84px 22px; align-items: center; gap: 6px; padding: 12px 12px; }
+  .stt { border: none; border-radius: 50%; width: 34px; height: 34px; padding: 0; font-size: 17px; cursor: pointer; font-family: inherit; display: grid; place-items: center; }
+  .item.s-ok  .stt { background: rgba(63,191,143,.16); }
+  .item.s-low .stt { background: rgba(240,180,60,.22); }
+  .item.s-out .stt { background: rgba(232,115,95,.20); }
+  .col-cat { font-size: 12px; font-weight: 700; color: var(--accA); cursor: pointer; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .col-name { min-width: 0; }
+  .col-name .name { font-size: 16px; }
+  .item.s-out .col-name .name { color: #d0432c; }
+  .col-date { font-size: 12px; font-weight: 700; color: var(--sub); text-align: right; line-height: 1.2; }
+  .col-date small { font-weight: 600; opacity: .8; }
+  .col-date .nodate { color: #c8d2d8; }
 
   /* カテゴリタブ */
   .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; margin-bottom: 4px; }
@@ -251,9 +260,9 @@
 
   // ストックの残量ステータス（タップで ok→low→out→ok）
   const STATUS = {
-    ok:  { label: "🟢 十分ある", next: "low" },
-    low: { label: "🟡 そろそろ", next: "out" },
-    out: { label: "🔴 ない",     next: "ok"  },
+    ok:  { emoji: "🟢", label: "十分ある", next: "low" },
+    low: { emoji: "🟡", label: "そろそろ", next: "out" },
+    out: { emoji: "🔴", label: "ない",     next: "ok"  },
   };
 
   const $ = (s) => document.querySelector(s);
@@ -396,7 +405,8 @@
       area.innerHTML = `<div class="empty"><div class="big">📦</div>このカテゴリのストックはありません。</div>`;
       return;
     }
-    area.innerHTML = `<div class="list">` + items.map(stockHTML).join("") + `</div>`;
+    const head = `<div class="stock-head"><span></span><span>種類</span><span>品名</span><span>前回購入日</span><span></span></div>`;
+    area.innerHTML = head + `<div class="list">` + items.map(stockHTML).join("") + `</div>`;
   }
 
   function stockHTML(i) {
@@ -405,14 +415,14 @@
     const nameHtml = state.editing === i.id
       ? `<input class="edit-input" value="${escapeHtml(i.name)}">`
       : `<div class="name" data-act="edit">${escapeHtml(i.name)}</div>`;
-    const bought = i.lastBought
-      ? `<span class="bought">🗓 前回 ${fmtDate(i.lastBought)}（${daysAgo(i.lastBought)}）</span>` : "";
+    const dateHtml = i.lastBought
+      ? `${fmtDate(i.lastBought)}<small>（${daysAgo(i.lastBought)}）</small>`
+      : `<span class="nodate">—</span>`;
     return `<div class="item stock s-${i.status || "ok"}" data-id="${i.id}">
-      <button class="stt" data-act="status">${st.label}</button>
-      <div class="body">
-        ${nameHtml}
-        <div class="meta"><span class="cat-pill" data-act="cat">${c.emoji} ${c.label} ▾</span>${bought}</div>
-      </div>
+      <button class="stt" data-act="status" title="${st.label}">${st.emoji}</button>
+      <span class="col-cat" data-act="cat">${c.emoji}${c.label}</span>
+      <div class="col-name">${nameHtml}</div>
+      <span class="col-date">${dateHtml}</span>
       <button class="del" data-act="del">×</button>
     </div>`;
   }
