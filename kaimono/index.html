@@ -241,10 +241,11 @@
     { id: "daily", label: "消耗品", emoji: "🧻" },
     { id: "other", label: "お菓子・嗜好品", emoji: "🍫" },
   ];
-  // 音声・入力からカテゴリを推測するためのキーワード
+  // 音声・入力からカテゴリを推測するためのキーワード（other=お菓子・嗜好品を優先判定）
   const GUESS = {
-    food:  ["牛乳","たまご","卵","肉","魚","野菜","米","パン","豆腐","納豆","バター","チーズ","ヨーグルト","果物","りんご","バナナ","調味料","醤油","味噌","砂糖","塩","油","小麦粉","冷凍","お菓子","飲","茶","コーヒー","ジュース","水"],
+    other: ["チョコ","チョコレート","お菓子","菓子","スナック","ポテチ","ポテトチップ","アイス","ガム","クッキー","ビスケット","せんべい","煎餅","ケーキ","プリン","キャンディ","あめ","飴","グミ","ビール","発泡酒","チューハイ","ワイン","日本酒","焼酎","ウイスキー","お酒","おつまみ","つまみ"],
     daily: ["洗剤","トイレット","ティッシュ","シャンプー","リンス","石鹸","せっけん","歯磨き","歯ブラシ","ラップ","ゴミ袋","ごみ袋","電池","マスク","おむつ","生理","柔軟剤","スポンジ","掃除","キッチンペーパー"],
+    food:  ["牛乳","たまご","卵","肉","魚","野菜","米","パン","豆腐","納豆","バター","チーズ","ヨーグルト","果物","りんご","バナナ","調味料","醤油","味噌","砂糖","塩","油","小麦粉","冷凍","飲","茶","コーヒー","ジュース","水"],
   };
 
   const state = {
@@ -338,8 +339,9 @@
   }
 
   function guessCat(name) {
-    for (const k of GUESS.food)  if (name.includes(k)) return "food";
+    for (const k of GUESS.other) if (name.includes(k)) return "other";
     for (const k of GUESS.daily) if (name.includes(k)) return "daily";
+    for (const k of GUESS.food)  if (name.includes(k)) return "food";
     return null;
   }
 
@@ -487,7 +489,7 @@
     const parts = name.split(/[、,，]|\s+と\s+|\n/).map((s) => s.trim()).filter(Boolean);
     const list = parts.length ? parts : [name];
     list.forEach((p) => {
-      const guessed = guessCat(p) || "other";
+      const guessed = guessCat(p) || "food";
       if (state.view === "stock") {
         const item = { name: p, cat: guessed, status: "ok", ts: Date.now() };
         if (cloud) { cloudAdd("stock", item); }
