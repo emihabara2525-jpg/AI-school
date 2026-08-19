@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>スタンプ工房 — キャラ決めウィザード</title>
+<style>
+  :root{
+    --bg:#fff7fb; --card:#ffffff; --ink:#3b2b34; --sub:#8a7680;
+    --pink:#ff7fb0; --pink-d:#ff5c9c; --mint:#7fd8c7; --sun:#ffd36e;
+    --line:#f0dbe6; --shadow:0 6px 20px rgba(255,124,176,.18);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6}
+  .wrap{max-width:520px; margin:0 auto; padding:16px 16px 120px}
+  header.top{text-align:center; padding:18px 0 6px}
+  header.top h1{margin:0; font-size:22px; letter-spacing:.02em}
+  header.top p{margin:4px 0 0; color:var(--sub); font-size:13px}
+
+  /* progress */
+  .bar{display:flex; gap:6px; margin:14px 0 6px}
+  .bar span{flex:1; height:6px; border-radius:99px; background:var(--line)}
+  .bar span.on{background:var(--pink)}
+  .stepno{text-align:center; color:var(--sub); font-size:12px; margin-bottom:10px}
+
+  .card{background:var(--card); border-radius:20px; box-shadow:var(--shadow);
+    padding:20px 18px; border:1px solid var(--line)}
+  .q{font-size:18px; font-weight:700; margin:0 0 4px}
+  .hint{color:var(--sub); font-size:13px; margin:0 0 16px}
+
+  .opts{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .opt{border:2px solid var(--line); background:#fff; border-radius:16px;
+    padding:14px 10px; text-align:center; cursor:pointer; font-size:15px; transition:.15s}
+  .opt .emo{display:block; font-size:30px; margin-bottom:4px}
+  .opt .sub{display:block; color:var(--sub); font-size:11px; margin-top:2px}
+  .opt:active{transform:scale(.97)}
+  .opt.sel{border-color:var(--pink); background:#fff0f6; box-shadow:0 0 0 3px #ffd9e8 inset}
+
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{border:2px solid var(--line); background:#fff; border-radius:99px;
+    padding:8px 14px; font-size:14px; cursor:pointer; transition:.15s}
+  .chip.sel{border-color:var(--mint); background:#effbf8; color:#1c7f6c; font-weight:700}
+  .chip:active{transform:scale(.96)}
+
+  input.txt{width:100%; font-size:17px; padding:14px; border:2px solid var(--line);
+    border-radius:14px; outline:none; background:#fff}
+  input.txt:focus{border-color:var(--pink)}
+
+  .nav{position:fixed; left:0; right:0; bottom:0; background:rgba(255,247,251,.92);
+    backdrop-filter:blur(6px); border-top:1px solid var(--line); padding:12px 16px;
+    display:flex; gap:10px; max-width:520px; margin:0 auto}
+  .btn{flex:1; border:none; border-radius:14px; padding:15px; font-size:16px;
+    font-weight:700; cursor:pointer}
+  .btn.ghost{background:#fff; border:2px solid var(--line); color:var(--sub); flex:0 0 96px}
+  .btn.go{background:var(--pink); color:#fff; box-shadow:var(--shadow)}
+  .btn.go:disabled{background:#f3c9dc; box-shadow:none}
+  .btn:active{transform:translateY(1px)}
+
+  /* result */
+  .sheet{background:linear-gradient(160deg,#fff,#fff5fa); border:2px dashed var(--pink);
+    border-radius:20px; padding:18px; margin-top:4px}
+  .sheet h2{margin:0 0 12px; font-size:18px; display:flex; align-items:center; gap:8px}
+  .row{display:flex; padding:9px 0; border-bottom:1px dashed var(--line); font-size:15px}
+  .row:last-child{border:none}
+  .row .k{flex:0 0 92px; color:var(--sub); font-size:13px}
+  .row .v{flex:1; font-weight:600}
+  .tools{display:grid; gap:10px; margin-top:16px}
+  .tools button{border:none; border-radius:14px; padding:14px; font-size:15px; font-weight:700; cursor:pointer}
+  .b-copy{background:var(--mint); color:#0f5f51}
+  .b-again{background:#fff; border:2px solid var(--line)!important; color:var(--sub)}
+  .b-save{background:var(--sun); color:#7a5a10}
+  .note{color:var(--sub); font-size:12px; text-align:center; margin-top:10px}
+  .hidden{display:none}
+
+  /* lines (作るライン) */
+  .lines{display:flex; align-items:center; gap:6px; margin-top:14px; flex-wrap:wrap}
+  .lines-lbl{font-size:12px; color:var(--sub); margin-right:2px}
+  .line{border:2px solid var(--line); background:#fff; border-radius:99px;
+    padding:7px 12px; font-size:13px; font-weight:700; color:var(--sub); cursor:pointer}
+  .line.on{background:var(--sun); color:#7a5a10; border-color:var(--sun)}
+  .line:active{transform:translateY(1px)}
+
+  /* tabs */
+  .tabs{display:flex; gap:8px; margin:8px 0 4px}
+  .tab{flex:1; border:2px solid var(--line); background:#fff; border-radius:99px;
+    padding:10px; font-size:14px; font-weight:700; color:var(--sub); cursor:pointer}
+  .tab.on{background:var(--pink); color:#fff; border-color:var(--pink)}
+  .tab:active{transform:translateY(1px)}
+
+  /* serifu */
+  .charbar{background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:10px 14px; font-size:13px; color:var(--sub); margin-bottom:12px}
+  .charbar b{color:var(--ink)}
+  .goal{display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap}
+  .goal .lbl{font-size:13px; color:var(--sub)}
+  .goal select{font-size:14px; padding:6px 10px; border:2px solid var(--line); border-radius:10px; background:#fff}
+  .goal .cnt{margin-left:auto; font-weight:800; font-size:16px}
+  .goal .cnt.full{color:#1c7f6c}
+  .catbar{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px}
+  .catbar button{white-space:nowrap; border:2px solid var(--line); background:#fff;
+    border-radius:99px; padding:7px 12px; font-size:13px; cursor:pointer; color:var(--sub)}
+  .catbar button.on{background:#fff0f6; border-color:var(--pink); color:var(--pink-d); font-weight:700}
+  .sugg{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px}
+  .sugg .chip.picked{border-color:var(--pink); background:#fff0f6; color:var(--pink-d); font-weight:700}
+  .sugg .chip.picked::before{content:"✓ "}
+  .picker{margin-bottom:6px}
+  .charitem{display:flex; align-items:stretch; gap:8px; margin-bottom:8px}
+  .charitem .loadc{flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:2px; border:2px solid var(--line); background:#fff; border-radius:14px; padding:10px 14px; font-size:15px; font-weight:700; color:var(--ink); cursor:pointer; text-align:left}
+  .charitem .loadc:hover{border-color:var(--pink); background:#fff6fa}
+  .charitem .loadc .csub{font-size:12px; font-weight:600; color:var(--sub)}
+  .charitem .delc{flex:0 0 44px; border:2px solid var(--line); background:#fff; border-radius:14px; cursor:pointer; font-size:16px}
+  .pickdiv{text-align:center; color:var(--sub); font-size:12px; margin:14px 0 4px}
+  .picklist{background:#fff; border:1px solid var(--line); border-radius:14px; padding:6px 4px}
+  .picklist .empty{color:var(--sub); font-size:13px; text-align:center; padding:18px}
+  .prow{display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px dashed var(--line)}
+  .prow:last-child{border:none}
+  .prow .num{flex:0 0 22px; color:var(--sub); font-size:12px}
+  .prow input{flex:1; border:none; font-size:15px; background:transparent; outline:none; color:var(--ink)}
+  .prow .del{border:none; background:#ffe3ee; color:var(--pink-d); border-radius:8px; width:28px; height:28px; cursor:pointer; font-size:15px}
+  .prow .tonep{flex:0 0 auto; color:var(--pink-d); font-size:13px; font-weight:700; white-space:nowrap}
+  .addrow{display:flex; gap:8px; margin:10px 0 4px}
+  .addrow input{flex:1; border:2px solid var(--line); border-radius:10px; padding:10px; font-size:15px; outline:none}
+  .addrow button{border:none; background:var(--mint); color:#0f5f51; border-radius:10px; padding:0 16px; font-weight:700; cursor:pointer}
+
+  /* prompt (量産) */
+  .langtoggle{display:flex; gap:6px; margin-bottom:12px}
+  .langtoggle button{border:2px solid var(--line); background:#fff; border-radius:99px;
+    padding:6px 16px; font-size:13px; font-weight:700; color:var(--sub); cursor:pointer}
+  .langtoggle button.on{background:var(--pink); color:#fff; border-color:var(--pink)}
+  .pcard{background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px}
+  .pcard .pnum{font-size:12px; color:var(--pink-d); font-weight:800; margin-bottom:5px}
+  .pcard .ptxt{font-size:13.5px; line-height:1.55; white-space:pre-wrap; color:var(--ink)}
+  .pcard .pcopy{margin-top:9px; border:none; background:var(--mint); color:#0f5f51;
+    border-radius:9px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer}
+  .pcard .pcopy:active{transform:translateY(1px)}
+  .guide{background:#fff; border:2px dashed var(--pink); border-radius:16px; padding:24px 18px;
+    text-align:center; color:var(--sub); font-size:14px; line-height:1.7}
+  .toast{position:fixed; left:50%; bottom:96px; transform:translateX(-50%);
+    background:#3b2b34; color:#fff; padding:10px 18px; border-radius:99px; font-size:14px;
+    opacity:0; transition:.3s; pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>🎨 スタンプ工房</h1>
+    <p>質問に答えるだけで、あなたのキャラが決まる</p>
+  </header>
+
+  <div class="lines" id="lines">
+    <span class="lines-lbl">作るライン</span>
+    <button class="line on" data-line="otona">👩‍💻 大人向け</button>
+    <button class="line" data-line="kodomo">🎮 こども向け</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-view="char">① キャラ</button>
+    <button class="tab" data-view="serifu">② セリフ</button>
+    <button class="tab" data-view="prompt">③ 量産</button>
+    <button class="tab" data-view="sell">④ 売る</button>
+  </div>
+
+  <div id="quiz">
+    <div class="bar" id="bar"></div>
+    <div class="stepno" id="stepno"></div>
+    <div class="card" id="card"></div>
+  </div>
+
+  <div id="result" class="hidden"></div>
+
+  <div id="serifu" class="hidden"></div>
+
+  <div id="prompt" class="hidden"></div>
+
+  <div id="sell" class="hidden"></div>
+</div>
+
+<div class="nav" id="nav">
+  <button class="btn ghost" id="back">もどる</button>
+  <button class="btn go" id="next">つぎへ</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== タイプ別モチーフ =====
+const MOTIFS = {
+  "動物":[
+    {v:"ねこ",emo:"🐱"},{v:"いぬ",emo:"🐶"},{v:"くま",emo:"🐻"},{v:"うさぎ",emo:"🐰"},
+    {v:"ひよこ",emo:"🐤"},{v:"ぱんだ",emo:"🐼"},{v:"ハムスター",emo:"🐹"},
+  ],
+  "人・キャラ":[
+    {v:"女の子",emo:"👧"},{v:"男の子",emo:"👦"},{v:"赤ちゃん",emo:"👶"},{v:"社会人・OL",emo:"💼"},
+    {v:"おじさん",emo:"🧔"},{v:"おばあちゃん",emo:"👵"},{v:"カップル",emo:"💑"},{v:"ゆるいおばけ",emo:"👻"},
+  ],
+  "物・食べ物":[
+    {v:"おにぎり",emo:"🍙"},{v:"たまご",emo:"🥚"},{v:"パン",emo:"🍞"},{v:"スイーツ",emo:"🍰"},
+    {v:"コーヒー",emo:"☕"},{v:"野菜",emo:"🥦"},{v:"ぬいぐるみ",emo:"🧸"},{v:"家電",emo:"🔌"},
+  ],
+  "文字中心":[
+    {v:"デカ文字",emo:"🔠"},{v:"吹き出し",emo:"💬"},{v:"手書きメモ",emo:"📝"},{v:"ハンコ風",emo:"🔖"},
+    {v:"ネオン文字",emo:"🌈"},{v:"シンプル文字",emo:"⬜"},
+  ],
+  _default:[
+    {v:"ねこ",emo:"🐱"},{v:"いぬ",emo:"🐶"},{v:"食べ物",emo:"🍙"},{v:"文字",emo:"🔤"},
+  ],
+};
+
+// ===== 質問データ =====
+const steps = [
+  {
+    key:"type", q:"まず大きく決めよう。何のキャラ？", hint:"売れ筋は「動物」と「文字中心（実用）」。迷ったら動物でOK。",
+    type:"single", freeInput:true,
+    options:[
+      {v:"動物", emo:"🐻", sub:"★いちばん人気"},
+      {v:"人・キャラ", emo:"🧑", sub:"名前・属性で刺さる"},
+      {v:"物・食べ物", emo:"🍩", sub:"ゆるくて人気"},
+      {v:"文字中心", emo:"🔤", sub:"★実用で売れやすい"},
+    ]
+  },
+  {
+    key:"motif", q:"くわしく選ぼう", hint:"あとで変えてもOK。ピンとくるものを1つ。",
+    type:"single", freeInput:true,
+    optionsFn:(a)=> MOTIFS[a.type] || MOTIFS._default
+  },
+  {
+    key:"color", q:"メインの色は？", hint:"1〜2色にしぼると統一感が出て、シリーズ化しやすい。",
+    type:"single", freeInput:true,
+    options:[
+      {v:"白・クリーム", emo:"🤍"},{v:"ピンク", emo:"🩷"},{v:"茶・ベージュ", emo:"🤎"},
+      {v:"みずいろ", emo:"🩵"},{v:"きいろ", emo:"💛"},{v:"みどり", emo:"💚"},
+    ]
+  },
+  {
+    key:"accent", q:"目印になる特徴は？", hint:"ひと目でその子だと分かる“推しポイント”。各カテゴリから好きなだけ選べます（無しでもOK）。",
+    type:"catselect",
+    groups:{
+      "顔まわり":["ほっぺが赤い","めがね","たれ目","つり目","八重歯","ほっぺにハート","目のクマ","うるうる涙目","ほくろ・そばかす","まる鼻"],
+      "頭・髪":["おだんごヘア","前髪パッツン","アホ毛・寝ぐせ","頭に花","王冠","天使の輪・羽","ツノ"],
+      "身につけるもの":["リボン","帽子","マフラー","ヘッドホン","ネクタイ","エプロン","リュック・カバン","首輪＋鈴"],
+      "体・模様":["ぶち模様","むちむち体型","手足が短い","耳が大きい","しっぽが特徴的"],
+    }
+  },
+  {
+    key:"taste", q:"絵の雰囲気（テイスト）は？", hint:"売れ筋は「ゆるふわ」と「シンプル」。凝った絵より“ゆるさ”が有利。",
+    type:"single", freeInput:true,
+    options:[
+      {v:"ゆるふわ", emo:"🫧", sub:"★最も売れ筋"},
+      {v:"シンプル・ミニマル", emo:"⚪", sub:"★実用で人気"},
+      {v:"かわいい系", emo:"🌸", sub:"女子・推し向け"},
+      {v:"手書き風", emo:"✏️", sub:"あたたかい印象"},
+      {v:"ネタ・おもしろ", emo:"😆", sub:"バズると強い"},
+      {v:"おしゃれ・大人", emo:"🖤", sub:"20〜30代向け"},
+    ]
+  },
+  {
+    key:"traits", q:"性格は？（2〜3個えらぶ）", hint:"性格が決まると、セリフや表情がブレなくなる。",
+    type:"multi", max:3,
+    options:["のんびり","元気","なまいき","甘えんぼ","マイペース","ぶっきらぼう","やさしい","おっちょこちょい","クール","食いしんぼう"]
+  },
+  {
+    key:"tone", q:"口調・しゃべり方は？", hint:"セリフの雰囲気が決まります。",
+    type:"single", freeInput:true,
+    options:[
+      {v:"ためぐち・ゆるい", emo:"😌"},{v:"ていねい・やわらか", emo:"🍵"},
+      {v:"関西弁", emo:"🗣️"},{v:"語尾がクセ強", emo:"🌀"},
+    ]
+  },
+  {
+    key:"name", q:"最後に名前！自動でつけたよ", hint:"気に入らなければ🎲で別の名前に。自分で書き直してもOK。",
+    type:"text", autoName:true, placeholder:"例：もちねこ、ぷくたろう"
+  },
+];
+
+const answers = {};
+const freeMode = {};   // そのステップで「じぶんで書く」を選んでいるか
+const catState = {};   // カテゴリ選択ステップで開いているカテゴリ
+const sessionChar = {};// 保存しなくてもこのセッション中は引き継げるキャラ（ライン別）
+let cur = 0;
+
+// 保存が使えない環境（プレビュー等）でも壊れないよう安全化
+function lsGet(key, fallback){
+  try{ const v=localStorage.getItem(key); return v==null?fallback:JSON.parse(v); }
+  catch(e){ return fallback; }
+}
+function lsSet(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch(e){ return false; }
+}
+
+// どんな環境でもコピーできるように（クリップボードAPIが使えない時は旧方式で）
+function fallbackCopy(text){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    return navigator.clipboard.writeText(text).then(()=>true).catch(()=>fallbackCopy(text));
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+function copyToast(text){
+  copyText(text).then(ok=> toast(ok ? 'コピーしたよ！' : 'コピーできない環境みたい。文をなぞって選択してね'));
+}
+
+// 作るライン（大人向け=otona / こども向け=kodomo）。ラインごとに別保存
+let line = lsGet('stamp_line', 'otona');
+function charsKey(){ return 'stamp_chars_'+line; }
+function serifuKey(){ return 'stamp_serifu_'+line; }
+// いま作ったキャラ（セッション）を最優先。無ければ保存済みキャラ。保存が使えない環境でも動くように
+function currentChar(){
+  const saved=lsGet(charsKey(), []);
+  return sessionChar[line] || saved[saved.length-1] || null;
+}
+// 呼び出せるキャラ一覧（保存済み＋このセッションのキャラ）を新しい順で
+function listChars(){
+  const saved=lsGet(charsKey(), []).map((c,idx)=>({...c, _src:'saved', _idx:idx}));
+  const out=saved.slice();
+  const sc=sessionChar[line];
+  if(sc && !saved.some(c=>c.name===sc.name)) out.push({...sc, _src:'session'});
+  return out.reverse();
+}
+// キャラを読み込んで設定シートを表示
+function loadChar(c){
+  const clean={...c}; delete clean._src; delete clean._idx;
+  for(const k in answers) delete answers[k];
+  Object.assign(answers, clean);
+  showResult();
+}
+// キャラを一覧から削除
+function deleteChar(entry){
+  if(entry._src==='saved'){
+    const list=lsGet(charsKey(), []);
+    list.splice(entry._idx,1);
+    lsSet(charsKey(), list);
+  } else {
+    delete sessionChar[line];
+  }
+}
+// 保存済みセリフ（無ければ画面で選んでいるセリフ）を返す
+function currentSerifu(){
+  const saved=lsGet(serifuKey(), []);
+  return saved.length ? saved : picks;
+}
+function defaultCat(){ return line==='kodomo' ? '10代・ゲーム女子' : '在宅ワーク'; }
+
+const bar = document.getElementById('bar');
+const stepno = document.getElementById('stepno');
+const card = document.getElementById('card');
+const nav = document.getElementById('nav');
+const backBtn = document.getElementById('back');
+const nextBtn = document.getElementById('next');
+
+function buildBar(){
+  bar.innerHTML='';
+  steps.forEach((_,i)=>{
+    const s=document.createElement('span');
+    if(i<=cur) s.className='on';
+    bar.appendChild(s);
+  });
+  stepno.textContent = `ステップ ${cur+1} / ${steps.length}`;
+}
+
+// キャラの特徴から名前を自動生成
+function suggestName(a){
+  const motif=a.motif||'';
+  const traits=a.traits||[];
+  const rnd=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+  // かわいい響きのパーツ（擬態語・食べ物）
+  const pre=["もち","ぷく","ふわ","ぽむ","むぎ","こむ","ちび","まる","だんご","きなこ","あんこ","もふ","ぷに","ころ","とろ","ぽん","ねむ","ゆる","もこ","くり","こな","うに","ぷりん","おこめ","ぷち","たま"];
+  const sufSweet=["ちゃん","りん","ぷー","たん","ぴ","ぽん","ぽよ"];
+  const sufCool =["まる","すけ","のすけ","じ","ぞう","太"];
+  // モチーフごとの“音”（鳴き声・特徴）
+  const motifSound={"ねこ":"にゃ","いぬ":"わん","くま":"くま","うさぎ":"うさ","ぱんだ":"ぱん","ひよこ":"ぴよ","ハムスター":"はむ","おにぎり":"むすび","たまご":"たま","パン":"ぱん","スイーツ":"あめ","コーヒー":"こひ"};
+
+  const cool=traits.some(t=>["なまいき","ぶっきらぼう","クール","マイペース"].includes(t));
+  const suf=()=> cool ? rnd(sufCool.concat(sufSweet.slice(0,2))) : rnd(sufSweet);
+  const dbl=["もち","ぷく","ふわ","ぽむ","むぎ","ころ","ぷに","もこ","ぽよ"];
+
+  const pats=[];
+  if(motifSound[motif]) pats.push(()=>rnd(pre)+motifSound[motif]);      // もち＋にゃ＝もちにゃ
+  pats.push(()=>rnd(pre)+suf());                                        // ぽむ＋りん
+  pats.push(()=>rnd(pre)+suf());                                        // （出やすく2回）
+  pats.push(()=>{const p=rnd(dbl); return p+p;});                       // もちもち
+  pats.push(()=>{const p=rnd(dbl); return p+p+rnd(["りん","ぽん","ぴ"]);}); // ぷくぷくりん
+
+  let name=rnd(pats)();
+  if(name.length>7) name=name.slice(0,7);
+  return name;
+}
+
+function charPickerHTML(){
+  const list=listChars();
+  if(list.length===0) return '';
+  return `<div class="picker">
+    <p class="q" style="font-size:15px; margin-bottom:4px">📁 前に作ったキャラを使う？</p>
+    <p class="hint" style="margin:0 0 10px">選ぶと設定シートをすぐ表示。新しく作るなら下の質問から。</p>
+    ${list.map((c,i)=>`<div class="charitem">
+       <button class="loadc" data-i="${i}">${(c.name||'名前なし')}<span class="csub">${c.motif||''}${c._src==='session'?'・未保存':''}</span></button>
+       <button class="delc" data-i="${i}" title="削除">🗑</button>
+     </div>`).join('')}
+    <div class="pickdiv">— または、新しく作る ↓ —</div>
+  </div>`;
+}
+function render(){
+  const st = steps[cur];
+  buildBar();
+  let html = (cur===0 ? charPickerHTML() : '') + `<p class="q">${st.q}</p><p class="hint">${st.hint}</p>`;
+  if(st.type==='single'){
+    // タイプに応じて選択肢が変わるステップ（モチーフ）に対応
+    const opts = st.optionsFn ? st.optionsFn(answers) : st.options;
+    // 選択肢のどれにも一致しない答え＝自由入力とみなす
+    const optVals = opts.map(o=>o.v);
+    const isCustom = answers[st.key] && !optVals.includes(answers[st.key]);
+    const free = st.freeInput && (freeMode[st.key] || isCustom);
+    html += `<div class="opts">`;
+    opts.forEach(o=>{
+      const sel = (!free && answers[st.key]===o.v) ? 'sel':'';
+      html += `<div class="opt ${sel}" data-v="${o.v}">
+        <span class="emo">${o.emo||''}</span>${o.v}
+        ${o.sub?`<span class="sub">${o.sub}</span>`:''}</div>`;
+    });
+    if(st.freeInput){
+      html += `<div class="opt ${free?'sel':''}" data-free="1">
+        <span class="emo">✏️</span>じぶんで書く</div>`;
+    }
+    html += `</div>`;
+    if(free){
+      const val = isCustom ? answers[st.key] : '';
+      html += `<input class="txt" id="freetxt" style="margin-top:12px" placeholder="ここに入力（例：${opts[0].v}）" value="${val}">`;
+    }
+  } else if(st.type==='multi'){
+    html += `<div class="chips">`;
+    const arr = answers[st.key]||[];
+    st.options.forEach(o=>{
+      const sel = arr.includes(o)?'sel':'';
+      html += `<div class="chip ${sel}" data-v="${o}">${o}</div>`;
+    });
+    html += `</div>`;
+  } else if(st.type==='catselect'){
+    const cats=Object.keys(st.groups);
+    let picked = Array.isArray(answers[st.key]) ? answers[st.key].slice()
+      : (answers[st.key] && answers[st.key]!=='特になし' ? [answers[st.key]] : []);
+    // カテゴリごとのプルダウン（すでに選んだものは一覧から除く）
+    cats.forEach(cat=>{
+      html += `<select class="txt catadd" data-cat="${cat}" style="margin-bottom:8px">
+        <option value="">＋ ${cat}から追加</option>
+        ${st.groups[cat].filter(it=>!picked.includes(it)).map(it=>`<option value="${it}">${it}</option>`).join('')}
+      </select>`;
+    });
+    html += `<div class="addrow"><input id="accFree" placeholder="自分で特徴を書く"><button id="accFreeBtn">追加</button></div>`;
+    html += `<p class="hint" style="margin:12px 0 6px">選んだ特徴（${picked.length}）　※無しでもOK</p>`;
+    if(picked.length===0){
+      html += `<div class="picklist"><div class="empty">上のプルダウンから、好きなだけ選ぼう</div></div>`;
+    } else {
+      html += `<div class="chips">${picked.map((p,i)=>`<div class="chip sel" data-rm="${i}">${p} ✕</div>`).join('')}</div>`;
+    }
+  } else if(st.type==='text'){
+    if(st.autoName && !answers[st.key]) answers[st.key]=suggestName(answers);
+    const val=(answers[st.key]||'').replace(/"/g,'&quot;');
+    html += `<input class="txt" id="txt" placeholder="${st.placeholder||''}" value="${val}">`;
+    if(st.autoName){
+      html += `<button id="reroll" style="margin-top:12px;border:2px solid var(--line);background:#fff;border-radius:12px;padding:12px 18px;font-size:15px;font-weight:700;color:var(--pink-d);cursor:pointer">🎲 別の名前にする</button>`;
+    }
+  }
+  card.innerHTML = html;
+
+  // 前に作ったキャラの呼び出し・削除
+  card.querySelectorAll('.loadc').forEach(b=>{
+    b.onclick=()=>{ const c=listChars()[+b.dataset.i]; if(c) loadChar(c); };
+  });
+  card.querySelectorAll('.delc').forEach(b=>{
+    b.onclick=()=>{ const c=listChars()[+b.dataset.i]; if(c && confirm(`「${c.name||'このキャラ'}」を一覧から削除する？`)){ deleteChar(c); render(); } };
+  });
+
+  // events
+  card.querySelectorAll('.opt').forEach(el=>{
+    el.onclick=()=>{
+      const before = answers[st.key];
+      if(el.dataset.free){         // 「じぶんで書く」を選んだ
+        freeMode[st.key]=true; answers[st.key]='';
+      } else {                     // 通常の選択肢
+        freeMode[st.key]=false; answers[st.key]=el.dataset.v;
+      }
+      // タイプを変えたらモチーフをリセット
+      if(st.key==='type' && before!==answers[st.key]){
+        delete answers.motif; freeMode.motif=false;
+      }
+      render(); syncNext();
+    };
+  });
+  const ft = document.getElementById('freetxt');
+  if(ft){
+    ft.oninput=()=>{ answers[st.key]=ft.value.trim(); syncNext(); };
+    ft.focus();
+  }
+  card.querySelectorAll('.chip').forEach(el=>{
+    el.onclick=()=>{
+      let arr = answers[st.key]||[];
+      const v = el.dataset.v;
+      if(arr.includes(v)) arr = arr.filter(x=>x!==v);
+      else { if(arr.length>=st.max){ toast(`${st.max}個までだよ`); return;} arr.push(v); }
+      answers[st.key]=arr; render(); syncNext();
+    };
+  });
+  const t = document.getElementById('txt');
+  if(t){ t.oninput=()=>{ answers[st.key]=t.value.trim(); syncNext(); }; }
+  const reroll = document.getElementById('reroll');
+  if(reroll){ reroll.onclick=()=>{ answers[st.key]=suggestName(answers); render(); syncNext(); }; }
+  // 特徴の複数選択（catselect）
+  const accArr=()=> Array.isArray(answers[st.key]) ? answers[st.key]
+      : (answers[st.key] && answers[st.key]!=='特になし' ? [answers[st.key]] : []);
+  card.querySelectorAll('.catadd').forEach(sel=>{
+    sel.onchange=()=>{
+      if(!sel.value) return;
+      const arr=accArr();
+      if(!arr.includes(sel.value)) arr.push(sel.value);
+      answers[st.key]=arr; render(); syncNext();
+    };
+  });
+  const accFree=document.getElementById('accFree');
+  const accFreeBtn=document.getElementById('accFreeBtn');
+  if(accFreeBtn){
+    const add=()=>{ const v=accFree.value.trim(); if(!v) return; const arr=accArr(); if(!arr.includes(v)) arr.push(v); answers[st.key]=arr; render(); syncNext(); };
+    accFreeBtn.onclick=add;
+    accFree.onkeydown=e=>{ if(e.key==='Enter') add(); };
+  }
+  card.querySelectorAll('.chip[data-rm]').forEach(el=>{
+    el.onclick=()=>{ const arr=accArr(); arr.splice(+el.dataset.rm,1); answers[st.key]=arr; render(); syncNext(); };
+  });
+
+  backBtn.style.visibility = cur===0 ? 'hidden':'visible';
+  nextBtn.textContent = cur===steps.length-1 ? '完成！':'つぎへ';
+  syncNext();
+}
+
+function syncNext(){
+  const st=steps[cur];
+  let ok=false;
+  if(st.type==='single') ok=!!answers[st.key];
+  else if(st.type==='catselect') ok=true;   // 特徴は任意（無しでもOK）
+  else if(st.type==='multi') ok=(answers[st.key]||[]).length>=1;
+  else if(st.type==='text') ok=!!(answers[st.key]&&answers[st.key].length>=1);
+  nextBtn.disabled=!ok;
+}
+
+nextBtn.onclick=()=>{
+  if(cur<steps.length-1){ cur++; render(); }
+  else showResult();
+};
+backBtn.onclick=()=>{ if(cur>0){ cur--; render(); } };
+
+function showResult(){
+  resultShown=true;
+  sessionChar[line]={...answers};   // 保存を押さなくても②③④で使えるようにしておく
+  document.getElementById('quiz').classList.add('hidden');
+  nav.classList.add('hidden');
+  const r=document.getElementById('result');
+  r.classList.remove('hidden');
+  const a=answers;
+  const traits=(a.traits||[]).join('・');
+  r.innerHTML = `
+    <div class="sheet">
+      <h2>📋 ${a.name||'なまえ未定'} の設定シート</h2>
+      <div class="row"><div class="k">タイプ</div><div class="v">${a.type||'-'}</div></div>
+      <div class="row"><div class="k">モチーフ</div><div class="v">${a.motif||'-'}</div></div>
+      <div class="row"><div class="k">色</div><div class="v">${a.color||'-'}</div></div>
+      <div class="row"><div class="k">特徴</div><div class="v">${accentJP(a)}</div></div>
+      <div class="row"><div class="k">テイスト</div><div class="v">${a.taste||'-'}</div></div>
+      <div class="row"><div class="k">性格</div><div class="v">${traits||'-'}</div></div>
+      <div class="row"><div class="k">口調</div><div class="v">${a.tone||'-'}</div></div>
+      <div class="row"><div class="k">名前</div><div class="v">${a.name||'-'}</div></div>
+    </div>
+
+    <div class="sheet" style="border-color:var(--mint); margin-top:14px">
+      <h2>🎨 STEP1：まず見た目を作ろう</h2>
+      <p class="hint" style="margin:0 0 10px">この文をGeminiに送ると、キャラが1体できます。気に入らなければ「べつの見た目にして」と送れば作り直せます。気に入ったら、<b>その同じチャットのまま</b>「③量産」の文を送ってね（切り取り・添付は不要）。</p>
+      <div class="langtoggle" id="cLang">
+        <button data-lang="ja" class="on">日本語</button>
+        <button data-lang="en">English</button>
+      </div>
+      <div class="ptxt" id="cDesignTxt" style="font-size:13.5px; line-height:1.55; white-space:pre-wrap; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px">${buildCharPrompt(a,'ja').replace(/</g,'&lt;')}</div>
+      <button class="pcopy" id="cDesignCopy" style="margin-top:10px; border:none; background:var(--mint); color:#0f5f51; border-radius:9px; padding:10px 16px; font-size:14px; font-weight:700; cursor:pointer">📋 デザイン用プロンプトをコピー</button>
+    </div>
+
+    <div class="tools">
+      <button class="b-copy" id="copy">📋 設定シートをコピー</button>
+      <button class="b-save" id="save">💾 このキャラを保存</button>
+      <button class="b-again" id="again">↺ もう一度つくる</button>
+    </div>
+    <p class="note">見た目が決まったら「💾 保存」→「② セリフ」→「③ 量産」へ進もう。</p>
+  `;
+  let cLang='ja';
+  const cTxt=document.getElementById('cDesignTxt');
+  document.querySelectorAll('#cLang button').forEach(b=>{
+    b.onclick=()=>{
+      cLang=b.dataset.lang;
+      document.querySelectorAll('#cLang button').forEach(x=>x.classList.toggle('on', x.dataset.lang===cLang));
+      cTxt.textContent=buildCharPrompt(a,cLang);
+    };
+  });
+  document.getElementById('cDesignCopy').onclick=()=>{
+    copyToast(buildCharPrompt(a,cLang));
+  };
+  document.getElementById('copy').onclick=()=>{
+    const txt = sheetText(a);
+    copyToast(txt);
+  };
+  document.getElementById('save').onclick=()=>{
+    sessionChar[line]={...a};   // まずセッションに確保（これで②③④はすぐ使える）
+    const list=lsGet(charsKey(), []);
+    list.push({...a, ts:Date.now()});
+    const ok=lsSet(charsKey(), list);
+    toast(ok?'保存したよ！':'このキャラで②③④に進めるよ（次回まで残す保存はこの環境では不可）');
+  };
+  document.getElementById('again').onclick=()=>{
+    for(const k in answers) delete answers[k];
+    cur=0; resultShown=false;
+    r.classList.add('hidden');
+    document.getElementById('quiz').classList.remove('hidden');
+    nav.classList.remove('hidden');
+    render();
+  };
+}
+
+function sheetText(a){
+  return `【キャラ設定シート】
+タイプ：${a.type||'-'}
+モチーフ：${a.motif||'-'}
+色：${a.color||'-'}
+特徴：${accentJP(a)}
+テイスト：${a.taste||'-'}
+性格：${(a.traits||[]).join('・')||'-'}
+口調：${a.tone||'-'}
+名前：${a.name||'-'}`;
+}
+
+let toastT;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove('show'),1600);
+}
+
+// ===================== 画面切り替え =====================
+const tabsEl=document.getElementById('tabs');
+tabsEl.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>switchView(t.dataset.view);
+});
+
+// 作るライン切り替え
+const linesEl=document.getElementById('lines');
+linesEl.querySelectorAll('.line').forEach(b=>{
+  b.onclick=()=>{
+    if(line===b.dataset.line) return;
+    line=b.dataset.line;
+    lsSet('stamp_line', line);
+    linesEl.querySelectorAll('.line').forEach(x=>x.classList.toggle('on', x.dataset.line===line));
+    // そのラインの保存を読み直す
+    picks = lsGet(serifuKey(), []);
+    curCat = defaultCat();
+    // 表示中の画面を更新
+    const activeView = tabsEl.querySelector('.tab.on').dataset.view;
+    if(activeView==='serifu'){ maybeAutoPick(); renderSerifu(); }
+    if(activeView==='prompt') renderPrompt();
+    if(activeView==='sell') renderSell();
+    toast(line==='kodomo' ? '🎮 こどもラインに切替' : '👩‍💻 大人ラインに切替');
+  };
+});
+// 起動時、保存されたラインにボタンを合わせる
+linesEl.querySelectorAll('.line').forEach(x=>x.classList.toggle('on', x.dataset.line===line));
+function switchView(view){
+  tabsEl.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.view===view));
+  const isChar = view==='char';
+  document.getElementById('quiz').classList.toggle('hidden', !(isChar && !resultShown));
+  document.getElementById('result').classList.toggle('hidden', !(isChar && resultShown));
+  document.getElementById('nav').classList.toggle('hidden', !(isChar && !resultShown));
+  document.getElementById('serifu').classList.toggle('hidden', view!=='serifu');
+  document.getElementById('prompt').classList.toggle('hidden', view!=='prompt');
+  document.getElementById('sell').classList.toggle('hidden', view!=='sell');
+  if(view==='serifu'){ maybeAutoPick(); renderSerifu(); }
+  if(view==='prompt') renderPrompt();
+  if(view==='sell') renderSell();
+}
+let resultShown=false;
+
+// ===================== セリフ設計 =====================
+const SERIFU = {
+  "あいさつ":["おはよう","おつかれさま","おやすみ","いってきます","ただいま","こんにちは","またね"],
+  "返事・連絡":["了解です","承知しました","確認します","少々お待ちを","OKです","検討します","あとで連絡します","進めておきます"],
+  "感謝・おわび":["ありがとう","助かりました","感謝です","すみません","ごめんなさい","恐れ入ります","無理しないでね"],
+  "リアクション":["すごい！","なるほど","わかります","いいね","がんばれ","お先に失礼します","ナイス","たしかに"],
+  "在宅ワーク":["画面共有お願いします","今日はリモートです","会議入ります","ミュートにしてます","離席します","対応中です","聞こえてますか？","本日オフです"],
+  "本音・あるある":["めんどくさい","なんか疲れた","そっとしておいて","今日はもう無理","早く帰りたい","それな","現実逃避したい","おなかすいた","二度寝したい"],
+  "10代・ゲーム女子":["いっしょにやろ！","ナイス！","ドンマイ","参加する〜","今ラン中","もう一戦！","神ゲー","詰んだ…","ログインした","あとでやろ","推し尊い","エモい","かわいすぎ","レベル上げよ","ラスボス倒した","課金しちゃった","ねむい"],
+};
+let curCat = defaultCat();
+let picks = lsGet(serifuKey(), []); // 選んだセリフ（ラインごと）
+let goal = 8;
+
+function renderSerifu(){
+  const s=document.getElementById('serifu');
+  // いちばん新しく保存したキャラ情報を表示
+  const c = currentChar();
+  const charInfo = c
+    ? `キャラ：<b>${c.name||'未設定'}</b>（${c.motif||'?'}／口調：${c.tone||'?'}）`
+    : `キャラ未保存。先に「①キャラ決め」で保存すると、ここに表示されます。`;
+
+  const cats=Object.keys(SERIFU);
+  const full = picks.length>=goal;
+  let html = `
+    <div class="charbar">${charInfo}</div>
+    <div class="goal">
+      <span class="lbl">目標セット数</span>
+      <select id="goalSel">
+        ${[8,16,24,32,40].map(n=>`<option value="${n}" ${n===goal?'selected':''}>${n}個</option>`).join('')}
+      </select>
+      <span class="cnt ${full?'full':''}">${picks.length} / ${goal}</span>
+    </div>
+    <button id="autoPick" style="width:100%; border:2px solid var(--pink); background:#fff0f6; color:var(--pink-d); border-radius:12px; padding:11px; font-size:14px; font-weight:700; cursor:pointer; margin-bottom:12px">🎲 キャラに合わせておまかせ選択</button>
+    <div class="catbar">
+      ${cats.map(cat=>`<button data-cat="${cat}" class="${cat===curCat?'on':''}">${cat}</button>`).join('')}
+    </div>
+    <div class="sugg">
+      ${SERIFU[curCat].map(w=>{
+        const picked = picks.includes(w);
+        return `<div class="chip ${picked?'picked':''}" data-w="${w}">${w}</div>`;
+      }).join('')}
+    </div>
+    <p class="q" style="font-size:15px">選んだセリフ（${picks.length}個）</p>
+    ${(c&&TONE_MAP[c.tone]) ? `<p class="hint" style="margin:-4px 0 8px">口調「${c.tone}」に合わせて、スタンプの言葉は<b>→</b>のように変わります。</p>` : ''}
+    <div class="picklist" id="picklist">
+      ${picks.length===0 ? `<div class="empty">上のワードをタップして追加しよう</div>`
+        : picks.map((w,i)=>{
+            const tw=toneAdjust(w, c&&c.tone);
+            return `<div class="prow">
+            <span class="num">${i+1}</span>
+            <input value="${w.replace(/"/g,'&quot;')}" data-i="${i}">
+            ${tw!==w?`<span class="tonep">→ ${tw}</span>`:''}
+            <button class="del" data-i="${i}">×</button>
+          </div>`;}).join('')}
+    </div>
+    <div class="addrow">
+      <input id="addInput" placeholder="自分でセリフを追加">
+      <button id="addBtn">追加</button>
+    </div>
+    <div class="tools">
+      <button class="b-copy" id="copyS">📋 セリフをコピー</button>
+      <button class="b-save" id="saveS">💾 保存する</button>
+      <button class="b-again" id="clearS">↺ 全部クリア</button>
+    </div>
+    <p class="note">LINEスタンプは8個以上で申請できます。まずは8個から！</p>
+  `;
+  s.innerHTML=html;
+
+  document.getElementById('goalSel').onchange=e=>{ goal=+e.target.value; renderSerifu(); };
+  document.getElementById('autoPick').onclick=()=>{
+    picks=autoPickSerifu(currentChar());
+    saveSerifu(); renderSerifu();
+    toast('おまかせで選んだよ！');
+  };
+  s.querySelectorAll('.catbar button').forEach(b=>{
+    b.onclick=()=>{ curCat=b.dataset.cat; renderSerifu(); };
+  });
+  s.querySelectorAll('.sugg .chip').forEach(ch=>{
+    ch.onclick=()=>{
+      const w=ch.dataset.w;
+      if(picks.includes(w)) picks=picks.filter(x=>x!==w);
+      else addSerifuWithLimit(w);
+      saveSerifu(); renderSerifu();
+    };
+  });
+  s.querySelectorAll('.prow input').forEach(inp=>{
+    inp.onchange=()=>{ picks[+inp.dataset.i]=inp.value.trim(); saveSerifu(); };
+  });
+  s.querySelectorAll('.prow .del').forEach(b=>{
+    b.onclick=()=>{ picks.splice(+b.dataset.i,1); saveSerifu(); renderSerifu(); };
+  });
+  const addBtn=document.getElementById('addBtn');
+  const addInput=document.getElementById('addInput');
+  const doAdd=()=>{
+    const v=addInput.value.trim();
+    if(!v) return;
+    if(picks.includes(v)){ toast('もう入ってるよ'); return; }
+    if(addSerifuWithLimit(v)){ addInput.value=''; saveSerifu(); renderSerifu(); }
+  };
+  addBtn.onclick=doAdd;
+  addInput.onkeydown=e=>{ if(e.key==='Enter') doAdd(); };
+
+  document.getElementById('copyS').onclick=()=>{
+    const txt=picks.map((w,i)=>`${i+1}. ${w}`).join('\n');
+    copyToast(txt);
+  };
+  document.getElementById('saveS').onclick=()=>{ saveSerifu(); toast('保存したよ！'); };
+  document.getElementById('clearS').onclick=()=>{
+    if(picks.length && !confirm('選んだセリフを全部消す？')) return;
+    picks=[]; saveSerifu(); renderSerifu();
+  };
+}
+function saveSerifu(){ lsSet(serifuKey(), picks); }
+
+// キャラ＆ラインに合わせて、セリフをおまかせで選ぶ
+function autoPickSerifu(c){
+  // カテゴリごとに何個取るかの配分（重要な順に。ニッチ枠は優先して残す）
+  const plan={};
+  plan["あいさつ"]=1;
+  if(line==='kodomo') plan["10代・ゲーム女子"]=2; else plan["在宅ワーク"]=2; // ニッチ枠を早めに確保
+  plan["返事・連絡"]=1;
+  plan["感謝・おわび"]=1;
+  plan["リアクション"]=1;
+  plan["本音・あるある"]=1;
+  // 性格で微調整（余裕があれば増える）
+  const t=(c&&c.traits)||[];
+  if(t.some(x=>["なまいき","ぶっきらぼう","クール","マイペース"].includes(x))) plan["本音・あるある"]+=1;
+  if(t.some(x=>["甘えんぼ","やさしい"].includes(x))) plan["感謝・おわび"]+=1;
+  if(t.some(x=>["元気","おっちょこちょい","食いしんぼう"].includes(x))) plan["リアクション"]+=1;
+
+  const chosen=[];
+  const pickFrom=(cat,n)=>{
+    const pool=(SERIFU[cat]||[]).filter(w=>!chosen.includes(w));
+    for(let i=0;i<n && pool.length;i++){
+      chosen.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    }
+  };
+  Object.entries(plan).forEach(([cat,n])=>pickFrom(cat,n));
+  // goalに満たなければ全カテゴリからランダム補充
+  const allCats=Object.keys(SERIFU);
+  let guard=0;
+  while(chosen.length<goal && guard++<200){
+    pickFrom(allCats[Math.floor(Math.random()*allCats.length)],1);
+  }
+  return chosen.slice(0,goal);
+}
+
+// 次のセット数（8→16→24→32→40）
+function nextGoal(g){ const t=[8,16,24,32,40]; const i=t.indexOf(g); return (i>=0 && i<t.length-1) ? t[i+1] : null; }
+
+// 上限を守ってセリフを追加。超えるときは「増やす／やめる」を選ばせる
+function addSerifuWithLimit(w){
+  if(picks.includes(w)) return false;      // 重複はしない
+  if(picks.length>=goal){
+    const ng=nextGoal(goal);
+    if(ng){
+      const ok=confirm(`セリフが目標の${goal}個に達しています。\n\n［OK］${ng}個に増やして追加する\n［キャンセル］追加しない（いらないセリフは × で消せます）`);
+      if(ok){ goal=ng; } else { return false; }
+    } else {
+      toast(`最大の${goal}個だよ。× で削除してから追加してね`);
+      return false;
+    }
+  }
+  picks.push(w);
+  return true;
+}
+
+// セリフ未選択なら、開いたときにおまかせで埋める
+function maybeAutoPick(){
+  if(picks.length>0) return;
+  picks=autoPickSerifu(currentChar());
+  saveSerifu();
+}
+
+// ===================== ③ プロンプト量産 =====================
+let promptLang = 'ja';
+
+// 日本語→英語の変換辞書（画像AI向け）
+const EN = {
+  motif:{"ねこ":"cat","いぬ":"dog","くま":"bear","うさぎ":"rabbit","ひよこ":"baby chick","ぱんだ":"panda","ハムスター":"hamster","女の子":"little girl","男の子":"little boy","赤ちゃん":"baby","社会人・OL":"office worker","おじさん":"middle-aged man","おばあちゃん":"grandma","カップル":"couple","ゆるいおばけ":"cute ghost","おにぎり":"rice ball","たまご":"egg","パン":"bread","スイーツ":"cake","コーヒー":"coffee cup","野菜":"vegetable","ぬいぐるみ":"plush toy","家電":"home appliance","デカ文字":"big bold text","吹き出し":"speech bubble","手書きメモ":"handwritten note","ハンコ風":"stamp seal","ネオン文字":"neon text","シンプル文字":"simple text"},
+  color:{"白・クリーム":"white and cream","ピンク":"pink","茶・ベージュ":"brown and beige","みずいろ":"light blue","きいろ":"yellow","みどり":"green"},
+  taste:{"ゆるふわ":"soft yuru-kawaii","シンプル・ミニマル":"simple minimal","かわいい系":"cute kawaii","手書き風":"hand-drawn","ネタ・おもしろ":"funny comical","おしゃれ・大人":"stylish adult"},
+  accent:{"ほっぺが赤い":"rosy cheeks","リボン":"a ribbon","帽子":"a cap","ほくろ・そばかす":"freckles","しっぽが特徴的":"a distinctive tail","特になし":"",
+    "めがね":"glasses","たれ目":"droopy eyes","つり目":"sharp upturned eyes","八重歯":"a little fang","ほっぺにハート":"heart-shaped cheeks","目のクマ":"dark circles under the eyes","うるうる涙目":"teary sparkling eyes","まる鼻":"a round nose",
+    "おだんごヘア":"a hair bun","前髪パッツン":"blunt bangs","アホ毛・寝ぐせ":"a cowlick","頭に花":"a flower on its head","王冠":"a crown","天使の輪・羽":"a halo and wings","ツノ":"small horns",
+    "マフラー":"a scarf","ヘッドホン":"headphones","ネクタイ":"a necktie","エプロン":"an apron","リュック・カバン":"a backpack","首輪＋鈴":"a collar with a bell",
+    "ぶち模様":"patched fur markings","むちむち体型":"a chubby body","手足が短い":"short stubby limbs","耳が大きい":"big ears"},
+  traits:{"のんびり":"easygoing","元気":"energetic","なまいき":"cheeky","甘えんぼ":"affectionate","マイペース":"laid-back","ぶっきらぼう":"blunt","やさしい":"kind","おっちょこちょい":"clumsy","クール":"cool","食いしんぼう":"gluttonous"},
+};
+function enMap(dict, v){ return EN[dict][v] || v; }
+
+// 特徴（複数可）をまとめる
+function accentList(a){
+  return Array.isArray(a.accent) ? a.accent
+    : (a.accent && a.accent!=='特になし' ? [a.accent] : []);
+}
+function accentJP(a){ const l=accentList(a); return l.length ? l.join('・') : '特になし'; }
+function accentEN(a){ return accentList(a).map(x=>enMap('accent',x)).filter(Boolean).join(' and '); }
+
+// セリフから表情＋ポーズ（仕草）＋演出エフェクトを自動推測
+function expr(w){
+  const has = arr => arr.some(k=>w.includes(k));
+  if(has(["ありがと","感謝","助か","おかげ"]))  return {jp:"にっこり感謝した", en:"smiling and grateful", poseJP:"両手を胸の前で合わせてペコリとお辞儀し", poseEN:"holding both hands together with a little bow", fxJP:"ふんわりした光やお花", fxEN:"soft glowing light and little flowers"};
+  if(has(["ごめん","すみ","申し訳","悪い","反省"])) return {jp:"申し訳なさそうな", en:"apologetic and sorry", poseJP:"手を合わせて頭を下げ", poseEN:"hands pressed together, bowing the head", fxJP:"青ざめた汗の玉", fxEN:"a nervous blue sweat drop"};
+  if(has(["了解","OK","ok","承知","確認","進め","任せ","把握"])) return {jp:"元気な", en:"confident", poseJP:"指で大きくOKサインを作り", poseEN:"making a big OK sign with the fingers", fxJP:"キラッと光る効果", fxEN:"a shiny sparkle"};
+  if(has(["すごい","いいね","ナイス","神","最高","天才"])) return {jp:"目をキラキラさせた", en:"excited with sparkling eyes", poseJP:"両手を上げて大興奮し", poseEN:"raising both arms up in excitement", fxJP:"キラキラと集中線", fxEN:"sparkles and radiating focus lines"};
+  if(has(["がんば","ドンマイ","無理しない","応援","ファイト","元気出"])) return {jp:"力強い", en:"encouraging", poseJP:"こぶしをぐっと握ってエールを送り", poseEN:"clenching a fist to cheer someone on", fxJP:"メラメラした気合いのオーラ", fxEN:"a fiery energetic aura"};
+  if(has(["めんど","疲れ","無理","帰りたい","ねむ","二度寝","現実逃避","だる"])) return {jp:"ぐったり疲れた", en:"tired and exhausted", poseJP:"机にぐでっと突っ伏して脱力し", poseEN:"slumping face-down on a desk, drained", fxJP:"どんより暗い雲とため息", fxEN:"a gloomy dark cloud and a sigh"};
+  if(has(["おこ","怒","ムカ","プンプン","ずるい"]))   return {jp:"ぷんぷん怒った", en:"angry and pouting", poseJP:"ほっぺを膨らませて腕を組み", poseEN:"puffing the cheeks with arms crossed", fxJP:"怒りマークと湯気", fxEN:"an anger mark and steam"};
+  if(has(["わかる","それな","たしかに","うん","なるほど"])) return {jp:"深く共感する", en:"agreeing", poseJP:"うんうんと大きくうなずき", poseEN:"nodding firmly", fxJP:"うなずきの動き線", fxEN:"motion lines from nodding"};
+  if(has(["おなか","食べ","ごはん","はら","スイーツ"]))  return {jp:"食いしんぼうな", en:"hungry", poseJP:"お腹を押さえてよだれを垂らし", poseEN:"holding the tummy, drooling a little", fxJP:"湯気とよだれ", fxEN:"rising steam and drool"};
+  if(has(["おはよ","おやすみ","いってき","ただいま","こんにち","またね","バイバイ"])) return {jp:"やさしい笑顔の", en:"gently smiling", poseJP:"片手を上げて元気に手を振り", poseEN:"waving one hand cheerfully", fxJP:"ぱっと明るい背景の光", fxEN:"a bright cheerful burst"};
+  if(has(["すき","好き","推し","尊い","エモ","かわい","ときめ"])) return {jp:"うっとりした", en:"adoring", poseJP:"両手を頬に当ててときめき", poseEN:"pressing both hands to the cheeks, swooning", fxJP:"飛び散るハート", fxEN:"floating hearts"};
+  if(has(["おめでと","祝","やった","嬉し","わーい"])) return {jp:"満面の笑みの", en:"joyful", poseJP:"両手を広げて飛び跳ねて喜び", poseEN:"jumping with arms wide open in joy", fxJP:"紙吹雪とクラッカー", fxEN:"confetti and party poppers"};
+  if(has(["泣","悲し","つら","ぴえん","しくしく"]))   return {jp:"うるうる涙目の", en:"teary-eyed", poseJP:"目もとを手でぬぐって泣きそうになり", poseEN:"wiping the eyes, about to cry", fxJP:"ぷるぷるの大粒の涙", fxEN:"big trembling tears"};
+  return {jp:"表情ゆたかな", en:"with a lively expression", poseJP:"軽く手を上げた自然なポーズで", poseEN:"with a natural friendly gesture", fxJP:"ちょっとした効果線", fxEN:"a few subtle effect lines"};
+}
+
+// キャラの「見た目デザイン」を作るプロンプト（量産の前に見た目を決める用）
+function buildCharPrompt(a, lang){
+  const traits=(a.traits||[]);
+  if(lang==='en'){
+    const acc=accentEN(a);
+    const accPart= acc ? `, with ${acc}` : '';
+    const pers=traits.map(t=>enMap('traits',t)).join(' and ') || 'friendly';
+    return `As a professional illustrator, design ONE single character for a best-selling LINE sticker set (internal name: ${a.name||'the character'}; do NOT put any name, letters or text in the image — illustration only). A ${enMap('taste',a.taste)} ${enMap('motif',a.motif)}, mainly ${enMap('color',a.color)}${accPart}, ${pers} vibe. Make it look like a top-selling sticker: instantly recognizable, charming and friendly, with a clear appealing personality. Front view, upper body, bold clean even outlines, soft polished colors, tidy composition, plain white background, professional-quality cute illustration — simple yet distinctive. IMPORTANT: do NOT add any props, items, accessories or objects that were not specified above — nothing in the hands, just the character itself. I will reuse this exact character for a whole set of expression stickers, so keep the design consistent and easy to redraw.`;
+  }
+  const accJP=accentJP(a);
+  const accPart=(accJP && accJP!=='特になし') ? `／特徴：${accJP}` : '';
+  const pers=traits.join('・') || 'やさしい';
+  return `プロのイラストレーターとして、売れ筋のLINEスタンプ用キャラクターを1体だけデザインして（名前は「${a.name||'キャラ'}」だけど、画像には名前や文字を一切入れないで、絵だけにして）。${a.motif}／${a.taste}なタッチ／${a.color}が基調${accPart}／${pers}な雰囲気。ひと目で覚えられて親しみやすい、思わず使いたくなる魅力的なデザインに。正面向き・上半身、太くて均一なはっきりした輪郭線、やわらかく洗練された配色、余白すっきり、背景は白。プロ品質のかわいいイラストで、シンプルだけど個性が伝わる見た目にして。※指定した特徴以外の小物・持ち物・アイテムは一切描かないで。手には何も持たせず、キャラクター本体だけにして。これからこの子で表情ちがいのスタンプを1セット作るので、統一しやすいデザインにしてね。`;
+}
+
+// セリフからシーン（場所・小物）を判定。あれば体の状況を上書きする
+function scene(w){
+  const has=arr=>arr.some(k=>w.includes(k));
+  if(has(["画面共有","会議","リモート","対応中","ミュート","離席","聞こえてます","オンライン","打ち合わせ","在宅","入ります"]))
+    return {jp:"ノートパソコンとモニターのある机に座って（ヘッドセットをつけて）", en:"sitting at a desk in front of a laptop and monitor, wearing a headset"};
+  if(has(["二度寝","おやすみ","ねむ","寝","布団","ふとん","おふとん"]))
+    return {jp:"ベッド（おふとん）で横になって", en:"lying down in bed under a blanket"};
+  if(has(["コーヒー","おはよ","一息","ひといき","休憩","カフェ","お茶"]))
+    return {jp:"湯気の立つコーヒーカップを持って", en:"holding a steaming cup of coffee"};
+  if(has(["おなか","食べ","ごはん","はら","スイーツ","いただき"]))
+    return {jp:"テーブルで食べ物を前にして", en:"at a table with some food in front"};
+  if(has(["本日オフ","オフです","休み"]))
+    return {jp:"部屋のソファでリラックスして", en:"relaxing on a sofa at home"};
+  return null;
+}
+
+// セリフに感情に合った記号（！？♡）をいい感じに付ける
+function decorate(w){
+  if(/[！!？?♡♥♪…～、。]$/.test(w)) return w;   // すでに記号がある
+  const has=arr=>arr.some(k=>w.includes(k));
+  if(has(["すき","好き","推し","尊い","かわい","エモ","ときめ","会いた"])) return w+"♡";
+  if(has(["すごい","いいね","ナイス","神","最高","天才","やった","おめでと","がんば","ファイト","わーい","嬉し","いってき","ただいま"])) return w+"！";
+  if(has(["おはよ","おやすみ","こんにち","またね","バイバイ","おつかれ"])) return w+"！";
+  if(has(["ますか","ですか","でしょうか","かな？","ですか？","元気？","どうですか"])) return w+"？";
+  return w;
+}
+
+// 口調に合わせてセリフの言葉を変換
+const TONE_MAP = {
+  "関西弁":{"ありがとう":"おおきに","感謝です":"おおきに","ごめんなさい":"ごめんな","すみません":"すんまへん","おはよう":"おはようさん","こんにちは":"まいど","おつかれさま":"おつかれさん","了解です":"ええで","OKです":"ええで","確認します":"確認するわ","わかります":"わかるわ","なるほど":"なるほどな","すごい！":"すごいやん！","すごい":"すごいやん","いいね":"ええやん","ナイス":"ええやん","がんばれ":"気張りや","ドンマイ":"ドンマイや","めんどくさい":"めんどいわ","なんか疲れた":"しんどいわ","今日はもう無理":"もう無理や","そっとしておいて":"ほっといて","おなかすいた":"はらへった","たしかに":"ほんまやな","本日オフです":"今日は休みや","無理しないでね":"無理せんときや","またね":"ほなな"},
+  "ていねい・やわらか":{"ありがとう":"ありがとうございます","ごめんなさい":"申し訳ございません","すみません":"失礼いたします","おはよう":"おはようございます","おつかれさま":"おつかれさまです","おやすみ":"おやすみなさい","了解です":"承知しました","OKです":"承知しました","確認します":"確認いたします","わかります":"かしこまりました","がんばれ":"応援しています","またね":"また今度","なるほど":"なるほどですね","すごい":"素晴らしいです","すごい！":"素晴らしいです！","感謝です":"感謝いたします"},
+};
+function toneAdjust(w, tone){
+  const m = TONE_MAP[tone];
+  return (m && m[w]) ? m[w] : w;
+}
+
+function buildPrompt(c, w, lang, i){
+  i = i||0;
+  const e = expr(w);
+  const sc = scene(w);
+  const dw = decorate(toneAdjust(w, c.tone));
+  // スタンプごとにアングル・寄り引きを変えて単調さを防ぐ
+  const anglesJP=["ちょっと斜めのアングル","横顔（真横）から","少し見上げるアングル","少し見下ろすアングル","正面","後ろを振り返る構図"];
+  const compsJP =["上半身","顔を大きくアップ","全身","バストアップ"];
+  const angleJP=anglesJP[i%anglesJP.length], compJP=compsJP[i%compsJP.length];
+  if(lang==='en'){
+    const anglesEN=["a slightly angled view","a side profile","a low angle looking up","a high angle looking down","a front view","looking back over the shoulder"];
+    const compsEN =["upper body","a big face close-up","full body","a bust shot"];
+    const angleEN=anglesEN[i%anglesEN.length], compEN=compsEN[i%compsEN.length];
+    const bodyEN = sc ? sc.en : e.poseEN;
+    const propEN = sc
+      ? ` Draw ONLY the scene props that fit this situation together with the character (keep the background transparent); do NOT add any other unspecified items.`
+      : ` Do NOT add any props or items that were not specified — nothing in the hands, just the character.`;
+    return `Same character as before (the ${enMap('motif',c.motif)}). Keep the exact same design, outfit and hair — do not change the look. As a professional sticker artist, make it dynamic (NOT a plain front pose): the character is ${bodyEN}, ${e.en}, shown from ${angleEN}, ${compEN}, with an exaggerated cute expression. Add expressive effects like ${e.fxEN}.${propEN} This is the sticker for "${dw}". The ONLY text is "${dw}", written in a bold rounded Japanese font with a clear white outline, large and easy to read, placed neatly at the top or bottom without covering the face (no name or other text). One character, transparent background, thick outline, near-square composition. Leave a little margin around the character and text so nothing is cut off at the edges.`;
+  }
+  const bodyJP = sc ? sc.jp : e.poseJP;
+  const propJP = sc
+    ? 'このシーンに合う小物だけキャラと一緒に描いてOK（背景は透明のまま）。それ以外の指定していない小物は描かないで。'
+    : '指定していない小物・持ち物は描かないで（手には何も持たせない）。';
+  return `さっきの子（${c.motif}）のまま、服・髪型・顔の特徴は変えないで。プロのスタンプ作家として、ありきたりな正面ではなく動きのある構図に：${bodyJP}、${e.jp}表情を、${angleJP}・${compJP}で大きく見せて。感情は大げさ（デフォルメ）にして、${e.fxJP}などの演出も添えて。${propJP}これは「${dw}」のスタンプ。文字は「${dw}」だけを、太めの丸ゴシックで白いフチをつけて大きく読みやすく、顔にかぶらないよう上か下にすっきり配置して（名前や他の文字は入れないで）。キャラは1体だけ、背景は透明、太めの輪郭線、正方形に近い構図。キャラや文字が画面の端で見切れないよう、まわりに少し余白を残して。`;
+}
+
+// メイン画像（お店の表紙）… 選んだポーズを文字なしで大きく
+function buildMainPrompt(c, w, lang){
+  const e=expr(w);
+  if(lang==='en'){
+    return `Same character as before (the ${enMap('motif',c.motif)}). Keep the exact same design. Create the STORE MAIN IMAGE (the cover): the character ${e.poseEN}, ${e.en}, one character large and centered, square composition. Exaggerated cute expression with effects like ${e.fxEN} — the most eye-catching version. NO text or name at all, illustration only. Transparent background, thick outline.`;
+  }
+  return `さっきの子（${c.motif}）のまま、見た目は変えないで。お店の「メイン画像（看板）」を作って：${e.poseJP}、${e.jp}表情で、1体だけ大きく中央に、正方形の構図。感情は大げさに、${e.fxJP}などの演出も添えて、いちばん魅力的で目を引く仕上がりに。文字・名前は一切入れないで、絵だけ。背景は透明、太めの輪郭線、キャラが端で見切れないようまわりに少し余白を残して。`;
+}
+// タブ画像（小さいアイコン）… 顔だけシンプルに
+function buildTabPrompt(c, lang){
+  if(lang==='en'){
+    return `Same character as before (the ${enMap('motif',c.motif)}). Keep the exact same design. Create a tiny TAB ICON: just the character's face and shoulders, front view, a cute simple smile, instantly recognizable. NO text or name. Transparent background, thick outline, tidy composition.`;
+  }
+  return `さっきの子（${c.motif}）の顔（上半身）だけを、小さなアイコン（タブ画像）用にシンプルに描いて。正面のかわいい笑顔で、ひと目でその子だと分かるように。文字・名前は入れないで、背景は透明、太めの輪郭線、余白すっきり。`;
+}
+
+let mainBaseIdx = 0;
+function renderPrompt(){
+  const s=document.getElementById('prompt');
+  const c=currentChar();
+  const serifu=currentSerifu();
+  const lineName = line==='kodomo' ? '🎮 こども向け' : '👩‍💻 大人向け';
+
+  if(!c){
+    s.innerHTML=`<div class="guide">このライン（${lineName}）は<br>まだキャラが保存されていません。<br><br>先に「① キャラ」でキャラを作って<br><b>💾 保存</b>してね。</div>`;
+    return;
+  }
+  if(!serifu.length){
+    s.innerHTML=`<div class="guide">このライン（${lineName}）は<br>まだセリフが選ばれていません。<br><br>先に「② セリフ」で言葉を選んで<br><b>💾 保存</b>してね。</div>`;
+    return;
+  }
+
+  if(mainBaseIdx>=serifu.length) mainBaseIdx=0;
+  const prompts = serifu.map((w,i)=>buildPrompt(c, w, promptLang, i));
+  let html = `
+    <div class="charbar">${lineName}／キャラ：<b>${c.name||'未設定'}</b>（${c.motif}）／セリフ ${serifu.length}個</div>
+    <div class="guide" style="text-align:left; padding:12px 14px; border-color:var(--sun); color:var(--ink); margin-bottom:14px">⚠️ <b>1個ずつ送ってね。</b><br>各カードの「これをコピー」で、Geminiに<b>1個ずつ</b>貼るのが正解です。全部まとめて送ると、1枚の絵にまとまってスタンプに使えません。</div>
+    <div class="langtoggle">
+      <button data-lang="ja" class="${promptLang==='ja'?'on':''}">日本語</button>
+      <button data-lang="en" class="${promptLang==='en'?'on':''}">English</button>
+    </div>
+
+    <p class="q" style="font-size:15px; margin:6px 0 6px">💬 STEP1：スタンプを作る（${serifu.length}個）</p>
+    ${prompts.map((p,i)=>`
+      <div class="pcard">
+        <div class="pnum">スタンプ ${i+1}（「${serifu[i]}」）</div>
+        <div class="ptxt">${p.replace(/</g,'&lt;')}</div>
+        <button class="pcopy" data-i="${i}">📋 これをコピー</button>
+      </div>`).join('')}
+    <div class="tools">
+      <button class="b-copy" id="copyAll">📋 指示文を全部コピー（メモ保存用）</button>
+    </div>
+    <p class="note">「全部コピー」は自分用のメモ保存用です。Geminiには上のカードから<b>1個ずつ</b>貼ってね（まとめて貼ると1枚絵になります）。同じチャットのまま送れば、同じ子のまま表情だけ変わります。</p>
+
+    <p class="q" style="font-size:15px; margin:26px 0 6px">🏪 STEP2：看板の画像を決める（申請に必須）</p>
+    <p class="hint" style="margin:0 0 10px">スタンプができたら、その中から看板にするポーズを選ぼう。</p>
+    <div class="pcard" style="border-color:var(--sun)">
+      <div class="pnum">どのポーズを看板にする？（${serifu.length}個から選ぶ）</div>
+      <select class="txt" id="mainBase">
+        ${serifu.map((w,i)=>`<option value="${i}" ${i===mainBaseIdx?'selected':''}>${w}</option>`).join('')}
+      </select>
+    </div>
+    <div class="pcard">
+      <div class="pnum">メイン画像（240×240・お店の表紙）</div>
+      <div class="ptxt">${buildMainPrompt(c, serifu[mainBaseIdx], promptLang).replace(/</g,'&lt;')}</div>
+      <button class="pcopy" id="copyMain">📋 メイン画像プロンプトをコピー</button>
+    </div>
+    <div class="pcard">
+      <div class="pnum">タブ画像（96×74・小さいアイコン）</div>
+      <div class="ptxt">${buildTabPrompt(c, promptLang).replace(/</g,'&lt;')}</div>
+      <button class="pcopy" id="copyTab">📋 タブ画像プロンプトをコピー</button>
+    </div>
+  `;
+  s.innerHTML=html;
+
+  s.querySelectorAll('.langtoggle button').forEach(b=>{
+    b.onclick=()=>{ promptLang=b.dataset.lang; renderPrompt(); };
+  });
+  document.getElementById('mainBase').onchange=e=>{ mainBaseIdx=+e.target.value; renderPrompt(); };
+  document.getElementById('copyMain').onclick=()=>{ copyToast(buildMainPrompt(c, serifu[mainBaseIdx], promptLang)); };
+  document.getElementById('copyTab').onclick=()=>{ copyToast(buildTabPrompt(c, promptLang)); };
+  s.querySelectorAll('.pcard .pcopy[data-i]').forEach(b=>{
+    b.onclick=()=>{ copyToast(prompts[+b.dataset.i]); };
+  });
+  document.getElementById('copyAll').onclick=()=>{
+    const all=prompts.map((p,i)=>`【${i+1}】${serifu[i]}\n${p}`).join('\n\n');
+    copyText(all).then(ok=>toast(ok?'全部コピーしたよ！':'コピーできない環境みたい。文をなぞって選択してね'));
+  };
+}
+
+// ===================== ④ 売る（宣伝＆ストア最適化） =====================
+// ラインに応じたニッチのハッシュタグ・訴求
+function nicheTags(){
+  return line==='kodomo'
+    ? ["#ゲーム好きさんと繋がりたい","#10代","#ゲーマー"]
+    : ["#リモートワーク","#社会人あるある","#お仕事スタンプ"];
+}
+function nicheAudience(){
+  return line==='kodomo' ? "ゲーム好きの10代" : "在宅ワークや社会人";
+}
+
+// 本音・共感セリフを1つ選ぶ（宣伝で刺さる用）
+function pickHonne(serifu){
+  const keys=["めんど","疲れ","無理","それな","眠","帰りたい","おなか","現実逃避"];
+  return serifu.find(w=>keys.some(k=>w.includes(k))) || serifu[0] || "";
+}
+
+// SNS宣伝文を3種つくる
+function buildSNS(c, serifu){
+  const name=c.name||"新キャラ";
+  const motif=c.motif||"キャラ";
+  const s1=serifu[0]||"", s2=serifu[1]||"", honne=pickHonne(serifu);
+  const tags=`#LINEスタンプ #新作スタンプ #${motif}スタンプ ${nicheTags().join(' ')}`;
+  return [
+    {label:"① 発売のお知らせ", text:
+`【新作LINEスタンプ】
+${name}、できました🎉
+
+${motif}の${c.taste||"ゆるい"}キャラが、「${s1}」「${s2}」など毎日使える言葉でおしゃべり！
+
+ダウンロードはこちら👇
+（ここに販売ページのURL）
+
+${tags} #${name}`},
+    {label:"② 共感で引きこむ", text:
+`「${honne}」って日、ありますよね…😂
+
+そんな気持ち、${name}が代わりに言ってくれます。
+${nicheAudience()}の毎日にどうぞ🍵
+（販売ページURL）
+
+${tags}`},
+    {label:"③ キャラ紹介", text:
+`はじめまして、${name}です🐾
+${motif}／${c.taste||"ゆるふわ"}／${(c.traits||[]).join('・')||"マイペース"}な性格。
+これから毎日をちょっと楽しくするスタンプを作っていきます！
+フォロー＆応援うれしいです😊
+
+${tags} #${name}`},
+  ];
+}
+
+// ストア最適化（タイトル・説明・検索ワード）
+function buildStore(c, serifu){
+  const name=c.name||"キャラ";
+  const motif=c.motif||"キャラ";
+  const taste=c.taste||"ゆるかわ";
+  const tone=c.tone||"";
+  const s1=serifu[0]||"", s2=serifu[1]||"";
+  // タイトル（40文字以内めやす）
+  let title=`${name}｜${tone?tone+"の":""}${taste}${motif}スタンプ`;
+  if(title.length>40) title=`${name}｜${taste}${motif}スタンプ`;
+  // 説明文
+  const desc=`${motif}の${name}が、毎日使える言葉でおしゃべり。${tone?tone+"の":""}${taste}なタッチで、${nicheAudience()}にぴったり。「${s1}」「${s2}」など${serifu.length}種類。日常・あいさつ・返事にどうぞ！`;
+  // 検索ワード
+  const words=[name, motif, `${motif}スタンプ`, taste, tone, "日常", "実用", "かわいい", "毎日使える"]
+    .concat(line==='kodomo'?["ゲーム","10代","JK"]:["在宅ワーク","社会人","仕事"])
+    .filter(Boolean);
+  return {title, desc, words:[...new Set(words)]};
+}
+
+function renderSell(){
+  const s=document.getElementById('sell');
+  const c=currentChar();
+  const serifu=currentSerifu();
+  const lineName = line==='kodomo' ? '🎮 こども向け' : '👩‍💻 大人向け';
+
+  if(!c || !serifu.length){
+    s.innerHTML=`<div class="guide">このライン（${lineName}）は、まだ準備が足りません。<br><br>先に「① キャラ」と「② セリフ」を作って<br><b>💾 保存</b>してね。<br>そのあと、ここで宣伝文が作れます。</div>`;
+    return;
+  }
+
+  const sns=buildSNS(c, serifu);
+  const store=buildStore(c, serifu);
+
+  let html = `
+    <div class="charbar">${lineName}／キャラ：<b>${c.name||'未設定'}</b>／セリフ ${serifu.length}個</div>
+
+    <p class="q" style="font-size:16px;margin-bottom:2px">🚀 SNSで宣伝しよう</p>
+    <p class="hint">売れる人＝宣伝する人。X（Twitter）やInstagramにコピペで投稿しよう。URLの部分だけ後で差し替えてね。</p>
+    ${sns.map((p,i)=>`
+      <div class="pcard">
+        <div class="pnum">${p.label}</div>
+        <div class="ptxt">${p.text.replace(/</g,'&lt;')}</div>
+        <button class="pcopy" data-sns="${i}">📋 これをコピー</button>
+      </div>`).join('')}
+
+    <p class="q" style="font-size:16px;margin:22px 0 2px">🔍 ストア最適化</p>
+    <p class="hint">LINEの店内検索は弱め。見つけてもらう言葉を用意しました。申請フォームに貼ってね。</p>
+    <div class="pcard">
+      <div class="pnum">タイトル案（${store.title.length}文字）</div>
+      <div class="ptxt">${store.title.replace(/</g,'&lt;')}</div>
+      <button class="pcopy" data-store="title">📋 タイトルをコピー</button>
+    </div>
+    <div class="pcard">
+      <div class="pnum">説明文案</div>
+      <div class="ptxt">${store.desc.replace(/</g,'&lt;')}</div>
+      <button class="pcopy" data-store="desc">📋 説明文をコピー</button>
+    </div>
+    <div class="pcard">
+      <div class="pnum">検索ワード（タグ）</div>
+      <div class="ptxt">${store.words.join('　/　')}</div>
+      <button class="pcopy" data-store="words">📋 検索ワードをコピー</button>
+    </div>
+
+    <p class="note">宣伝は1回で終わらせず、使用例つきで何度も投稿するのが上位10%のコツ。</p>
+  `;
+  s.innerHTML=html;
+
+  s.querySelectorAll('.pcopy[data-sns]').forEach(b=>{
+    b.onclick=()=>{ copyToast(sns[+b.dataset.sns].text); };
+  });
+  s.querySelectorAll('.pcopy[data-store]').forEach(b=>{
+    b.onclick=()=>{
+      const k=b.dataset.store;
+      const v = k==='title'?store.title : k==='desc'?store.desc : store.words.join(' ');
+      copyToast(v);
+    };
+  });
+}
+
+render();
+</script>
+</body>
+</html>
