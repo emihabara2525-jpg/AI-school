@@ -355,6 +355,18 @@
     const n = Math.round((d0 - d1) / 86400000);
     return n <= 0 ? "今日" : n === 1 ? "昨日" : n + "日前";
   }
+  function dayStart(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  // 予測「あと何日でなくなるか」。小さいほど早く切れる＝上に表示。
+  // out(🔴切れ)は最優先。学習データ(avgDays)が無ければ Infinity（＝前回日の古い順にまわす）
+  function predLeft(i) {
+    if (i.status === "out") return -1e9;
+    if (i.avgDays && i.lastBought) {
+      const since = Math.round((dayStart(Date.now()) - dayStart(i.lastBought)) / 86400000);
+      return i.avgDays - since;
+    }
+    return Infinity;
+  }
+
   // 品名からストックの前回購入日を引く（無ければ null）
   function lastBoughtFor(name) {
     const s = state.stock.find((x) => x.name === name);
@@ -403,8 +415,13 @@
     }
     let items = state.stock.slice();
     if (state.filter !== "all") items = items.filter((i) => i.cat === state.filter);
-    const rank = { out: 0, low: 1, ok: 2 };
-    items.sort((a, b) => (rank[a.status] ?? 2) - (rank[b.status] ?? 2));
+    // 第1優先：回転率から予測して「早く切れそうな順」／第2優先：前回購入日の古い順
+    items.sort((a, b) => {
+      const pa = predLeft(a), pb = predLeft(b);
+      if (pa !== pb) return pa - pb;
+      const la = a.lastBought || Infinity, lb = b.lastBought || Infinity;
+      return la === lb ? 0 : la - lb;
+    });
     if (items.length === 0) {
       area.innerHTML = `<div class="empty"><div class="big">📦</div>このカテゴリのストックはありません。</div>`;
       return;
@@ -586,8 +603,15 @@
     bought.forEach((bi) => {
       const existing = state.stock.find((s) => s.name === bi.name);
       if (existing) {
-        if (cloud) cloudUpdate("stock", existing.id, { status: "ok", lastBought: now });
-        else { existing.status = "ok"; existing.lastBought = now; }
+        // 前回購入からの日数＝その在庫が持った期間。これを学習して回転率(avgDays)にする
+        const patch = { status: "ok", lastBought: now };
+        const gap = existing.lastBought ? Math.round((dayStart(now) - dayStart(existing.lastBought)) / 86400000) : 0;
+        if (gap > 0) {
+          patch.avgDays = existing.avgDays ? Math.round(existing.avgDays * 0.5 + gap * 0.5) : gap;
+          patch.prevBought = existing.lastBought;
+        }
+        if (cloud) cloudUpdate("stock", existing.id, patch);
+        else Object.assign(existing, patch);
       } else {
         const item = { name: bi.name, cat: bi.cat, status: "ok", lastBought: now, ts: now };
         if (cloud) cloudAdd("stock", item);
