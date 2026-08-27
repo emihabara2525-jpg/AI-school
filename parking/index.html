@@ -1,0 +1,680 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お祭り駐車場 予約</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c1272d">
+
+<style>
+  :root{
+    --red:#c1272d; --red-d:#9c1f24; --gold:#e8b23a;
+    --bg:#fff7f2; --card:#ffffff; --ink:#2a2320; --sub:#8a7d76;
+    --line:#f0e2d8; --ok:#2e9e5b; --okbg:#e8f7ee; --warn:#c98a00;
+    --disabled:#cfc4bc;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-text-size-adjust:100%;
+    padding:0 0 40px;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:0 16px}
+
+  /* ヘッダー（花火の夜空） */
+  header{
+    position:relative; overflow:hidden;
+    background:linear-gradient(180deg,#1b0836 0%,#5a1226 58%,var(--red-d) 100%);
+    color:#fff; text-align:center; padding:22px 16px 26px;
+    border-bottom:4px solid var(--gold);
+    text-shadow:0 1px 6px rgba(0,0,0,.45);
+  }
+  header > *{position:relative; z-index:1}   /* 文字を花火より前面に */
+  .fw{position:absolute; inset:0; width:100%; height:100%; z-index:0; pointer-events:none}
+  .fw .star{opacity:.8}   /* 静止画（チカチカしない） */
+  header .festival{font-size:14px; opacity:.95; letter-spacing:.06em; font-weight:700}
+  header h1{margin:6px 0 2px; font-size:20px; font-weight:800; line-height:1.35}
+  header .date{font-size:15px; font-weight:700}
+  header .price{
+    display:block; width:fit-content; margin:10px auto 0; background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.5); border-radius:999px;
+    padding:5px 16px; font-size:15px; font-weight:800;
+  }
+  header .pay{
+    display:block; width:fit-content; margin:8px auto 0; font-size:13px; font-weight:700;
+    background:rgba(255,255,255,.14); border-radius:999px; padding:4px 14px;
+  }
+
+  /* 残り台数 */
+  .remain{
+    background:var(--card); border-radius:18px; margin:18px 0;
+    padding:18px; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.06);
+    border:1px solid var(--line);
+  }
+  .remain .line{display:flex; align-items:baseline; justify-content:center; gap:6px; flex-wrap:nowrap}
+  .remain .lead{font-size:18px; font-weight:800; color:var(--ink)}
+  .remain .num{font-size:46px; font-weight:900; line-height:1; color:var(--red)}
+  .remain .unit{font-size:18px; font-weight:800; color:var(--ink)}
+  .remain .sep{font-size:20px; color:var(--sub); font-weight:700}
+  .remain .total{color:var(--sub); font-size:18px; font-weight:700}
+  .remain.full .num{color:var(--sub); font-size:34px}
+  .remain.full .lead,.remain.full .unit,.remain.full .sep,.remain.full .total{display:none}
+  .bar{height:12px; border-radius:999px; background:#f1e6dc; overflow:hidden; margin-top:12px}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--gold),var(--red)); transition:width .4s}
+
+  /* カード */
+  .card{
+    background:var(--card); border-radius:18px; padding:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,.06); border:1px solid var(--line); margin-bottom:16px;
+  }
+  .card h2{margin:0 0 4px; font-size:17px}
+  .card p.lead{margin:0 0 14px; color:var(--sub); font-size:13px}
+
+  label{display:block; font-size:14px; font-weight:700; margin:14px 0 6px}
+  label .req{color:var(--red); font-size:12px; margin-left:4px}
+  input[type=text],input[type=tel]{
+    width:100%; font-size:17px; padding:14px; border:2px solid var(--line);
+    border-radius:12px; background:#fffdfb; color:var(--ink);
+  }
+  input:focus{outline:none; border-color:var(--gold)}
+  .hint{font-size:12px; color:var(--sub); margin-top:4px}
+
+  /* 支払い方法の選択 */
+  .paypick{display:flex; gap:10px}
+  .paybtn{
+    flex:1; font-size:16px; font-weight:800; padding:14px; cursor:pointer;
+    border:2px solid var(--line); border-radius:12px; background:#fffdfb; color:var(--sub);
+  }
+  .paybtn.on{border-color:var(--red); background:#fff2f0; color:var(--red)}
+
+  .btn{
+    display:block; width:100%; border:none; border-radius:14px; cursor:pointer;
+    font-size:18px; font-weight:800; padding:16px; margin-top:18px; color:#fff;
+    background:var(--red); box-shadow:0 4px 0 var(--red-d); transition:transform .05s;
+  }
+  .btn:active{transform:translateY(2px); box-shadow:0 2px 0 var(--red-d)}
+  .btn[disabled]{background:var(--disabled); box-shadow:0 4px 0 #b3a89f; cursor:not-allowed}
+  .btn.line{background:#06c755; box-shadow:0 4px 0 #049a43}
+  .btn.ghost{background:#fff; color:var(--red); border:2px solid var(--red); box-shadow:none; font-size:15px; padding:12px}
+
+  .err{color:var(--red); font-size:14px; font-weight:700; margin-top:10px; min-height:1.2em; text-align:center}
+
+  /* 完了画面 */
+  .done{text-align:center}
+  .done .check{font-size:56px}
+  .done .no{
+    display:inline-block; background:var(--red); color:#fff; font-weight:900;
+    font-size:30px; border-radius:14px; padding:8px 22px; margin:8px 0 4px;
+  }
+  .done .msg{color:var(--sub); font-size:14px; margin:6px 0 16px}
+  .summary{
+    text-align:left; background:#fff9f4; border:1px dashed var(--line);
+    border-radius:12px; padding:14px; font-size:15px; line-height:1.9;
+  }
+  .summary b{display:inline-block; width:5.5em; color:var(--sub); font-weight:700}
+  .note{font-size:12px; color:var(--sub); margin-top:14px; line-height:1.7}
+
+  /* 店主用リンク */
+  .adminlink{text-align:center; margin:24px 0 8px}
+  .adminlink a{color:var(--sub); font-size:12px; text-decoration:underline; cursor:pointer}
+
+  /* 店主画面 */
+  .adminbar{
+    background:var(--ink); color:#fff; padding:12px 16px; display:flex;
+    justify-content:space-between; align-items:center;
+  }
+  .adminbar b{font-size:15px}
+  .adminbar a{color:#ffd; font-size:12px; cursor:pointer; text-decoration:underline}
+  .stat{display:flex; gap:10px; margin:16px 0}
+  .stat > div{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; text-align:center}
+  .stat .k{font-size:12px; color:var(--sub)}
+  .stat .v{font-size:24px; font-weight:900}
+  .stat .v.money{color:var(--ok)}
+  .res{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:10px;
+  }
+  .res.cancel{opacity:.5}
+  .res.done{border-color:var(--ok); background:var(--okbg)}
+  .res .top{display:flex; justify-content:space-between; align-items:center}
+  .res .rno{font-weight:900; color:var(--red)}
+  .res .rname{font-weight:800; font-size:17px}
+  .res .rinfo{color:var(--sub); font-size:14px; margin-top:4px; line-height:1.7}
+  .res .acts{display:flex; gap:8px; margin-top:10px}
+  .res .acts button{
+    flex:1; border:none; border-radius:10px; padding:10px; font-weight:800; font-size:14px; cursor:pointer;
+  }
+  .res .acts .recv{background:var(--ok); color:#fff}
+  .res .acts .recv.on{background:#fff; color:var(--ok); border:2px solid var(--ok)}
+  .res .acts .cxl{background:#f3ece7; color:var(--sub)}
+  .badge{font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px}
+  .badge.y{background:#fff3d6; color:var(--warn)}
+  .badge.g{background:var(--okbg); color:var(--ok)}
+  .badge.x{background:#eee; color:var(--sub)}
+  .empty{text-align:center; color:var(--sub); padding:40px 0; font-size:14px}
+  .pass{max-width:340px; margin:60px auto; text-align:center}
+
+  .hide{display:none !important}
+  .cloud-warn{background:#fff3d6; color:var(--warn); font-size:12px; text-align:center; padding:8px; font-weight:700}
+
+  /* 利用者へのお願い */
+  .notice-box{
+    background:#fff8e8; border:2px solid var(--gold); border-radius:16px;
+    padding:14px 16px; margin-bottom:16px;
+  }
+  .notice-box .nh{font-weight:800; color:var(--warn); font-size:15px; margin-bottom:6px}
+  .notice-box p{margin:0; font-size:14px; line-height:1.7}
+  .notice-box .big{font-weight:800; color:var(--red)}
+</style>
+
+<!-- ============ Firebase（かいものリストと同じ設定を再利用） ============ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, onSnapshot, query, orderBy, runTransaction, updateDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCGv89FlKMcfdgYSF9MYYzL3W0Im09bkbo",
+    authDomain: "kaimono-list-63ee9.firebaseapp.com",
+    projectId: "kaimono-list-63ee9",
+    storageBucket: "kaimono-list-63ee9.firebasestorage.app",
+    messagingSenderId: "634167351822",
+    appId: "1:634167351822:web:2bb761bc9cbd62388c7a5f"
+  };
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.FB = { db, collection, doc, onSnapshot, query, orderBy, runTransaction, updateDoc };
+    window.dispatchEvent(new Event("fb-ready"));
+  } catch (e) { console.warn("Firebase 初期化に失敗", e); }
+</script>
+
+<!-- =========================== 画面 =========================== -->
+
+<!-- お客さん：予約フォーム -->
+<div id="customer">
+  <header>
+    <svg class="fw" viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <symbol id="bst" viewBox="-45 -45 90 90">
+          <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <line x1="0" y1="0" x2="40" y2="0"/><line x1="0" y1="0" x2="34.6" y2="20"/>
+            <line x1="0" y1="0" x2="20" y2="34.6"/><line x1="0" y1="0" x2="0" y2="40"/>
+            <line x1="0" y1="0" x2="-20" y2="34.6"/><line x1="0" y1="0" x2="-34.6" y2="20"/>
+            <line x1="0" y1="0" x2="-40" y2="0"/><line x1="0" y1="0" x2="-34.6" y2="-20"/>
+            <line x1="0" y1="0" x2="-20" y2="-34.6"/><line x1="0" y1="0" x2="0" y2="-40"/>
+            <line x1="0" y1="0" x2="20" y2="-34.6"/><line x1="0" y1="0" x2="34.6" y2="-20"/>
+          </g>
+          <g fill="currentColor">
+            <circle cx="40" cy="0" r="2.4"/><circle cx="34.6" cy="20" r="2.4"/>
+            <circle cx="20" cy="34.6" r="2.4"/><circle cx="0" cy="40" r="2.4"/>
+            <circle cx="-20" cy="34.6" r="2.4"/><circle cx="-34.6" cy="20" r="2.4"/>
+            <circle cx="-40" cy="0" r="2.4"/><circle cx="-34.6" cy="-20" r="2.4"/>
+            <circle cx="-20" cy="-34.6" r="2.4"/><circle cx="0" cy="-40" r="2.4"/>
+            <circle cx="20" cy="-34.6" r="2.4"/><circle cx="34.6" cy="-20" r="2.4"/>
+          </g>
+        </symbol>
+      </defs>
+      <g fill="#fff">
+        <circle class="star" cx="30" cy="30" r="1"/><circle class="star" cx="12" cy="70" r="1.1"/>
+        <circle class="star" cx="388" cy="35" r="1"/><circle class="star" cx="395" cy="100" r="1.1"/>
+        <circle class="star" cx="55" cy="150" r="1"/><circle class="star" cx="350" cy="155" r="1"/>
+      </g>
+      <!-- 左側 -->
+      <use class="burst" href="#bst" x="-18" y="-6" width="96"  height="96"  color="#e8b23a"/>
+      <use class="burst" href="#bst" x="-22" y="70" width="82"  height="82"  color="#ff6a6f"/>
+      <use class="burst" href="#bst" x="48"  y="100" width="58" height="58"  color="#ffd76b"/>
+      <!-- 右側 -->
+      <use class="burst" href="#bst" x="310" y="-10" width="104" height="104" color="#ff6a6f"/>
+      <use class="burst" href="#bst" x="322" y="78" width="86"  height="86"  color="#e8b23a"/>
+      <use class="burst" href="#bst" x="292" y="105" width="56" height="56"  color="#fff"/>
+    </svg>
+    <div class="festival">福山夏まつり2027 あしだ川花火大会</div>
+    <h1>ビッグアメリカンショップ 新涯店<br>店舗駐車場 事前予約</h1>
+    <div class="date" id="hDate">2027年8月15日（当日）</div>
+    <div class="price" id="hPrice">1台 5,000円 ／ 当日お支払い</div>
+    <div class="pay">💴 現金 ・ 📱 PayPay でお支払いいただけます</div>
+  </header>
+
+  <div class="wrap">
+    <div id="cloudWarn" class="cloud-warn hide">⚠️ ネットにつながっていないため、予約を受け付けできません</div>
+
+    <!-- 残り台数 -->
+    <div class="remain" id="remainBox">
+      <div class="line">
+        <span class="lead">残り</span><span class="num" id="remainNum">–</span><span class="unit">台</span>
+        <span class="sep">／</span><span class="total" id="remainTotal">全20台</span>
+      </div>
+      <div class="bar"><i id="remainBar" style="width:0%"></i></div>
+    </div>
+
+    <!-- 利用者へのお願い -->
+    <div class="notice-box">
+      <div class="nh">⚠️ ご予約のお客様へお願い</div>
+      <p>当日は、通常のお客様が駐車場をご利用されておりますので、ご予約のお客様は <span class="big">18時以降</span> にご来店ください。</p>
+    </div>
+
+    <!-- 入力フォーム -->
+    <div class="card" id="formCard">
+      <h2>ご予約はこちら</h2>
+      <p class="lead">下の項目を入れて「予約する」を押してください。料金は当日、現地で <b>現金またはPayPay</b> でお支払いください。</p>
+
+      <label>お名前<span class="req">必須</span></label>
+      <input type="text" id="fName" placeholder="例）山田 太郎" autocomplete="name">
+
+      <label>電話番号<span class="req">必須</span></label>
+      <input type="tel" id="fPhone" placeholder="例）09012345678" autocomplete="tel" inputmode="numeric">
+      <div class="hint">当日ご連絡することがあります（数字を入れると自動で 090-1234-5678 の形になります）</div>
+
+      <label>車のナンバー<span class="req">必須</span></label>
+      <input type="text" id="fPlate" placeholder="例）福山 580 す 12-34">
+      <div class="hint">受付でお車を確認するために使います。<b style="color:var(--red)">当日お車が変わってもOK</b>。その場合は事前にLINEでお知らせください。</div>
+
+      <label>お支払い方法<span class="req">必須</span></label>
+      <div class="paypick">
+        <button type="button" class="paybtn on" data-pay="現金">💴 現金</button>
+        <button type="button" class="paybtn" data-pay="PayPay">📱 PayPay</button>
+      </div>
+      <div class="hint">当日、その場での変更もできます</div>
+
+      <button class="btn" id="reserveBtn">この内容で予約する</button>
+      <div class="err" id="formErr"></div>
+    </div>
+
+    <div class="adminlink"><a id="toAdmin">店舗の方はこちら（予約一覧）</a></div>
+  </div>
+</div>
+
+<!-- お客さん：予約完了 -->
+<div id="done" class="hide">
+  <header>
+    <svg class="fw" viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g fill="#fff">
+        <circle class="star" cx="30" cy="30" r="1"/><circle class="star" cx="12" cy="80" r="1.1"/>
+        <circle class="star" cx="388" cy="35" r="1"/><circle class="star" cx="395" cy="95" r="1.1"/>
+      </g>
+      <use class="burst" href="#bst" x="-18" y="-4" width="94"  height="94"  color="#e8b23a"/>
+      <use class="burst" href="#bst" x="-20" y="72" width="78"  height="78"  color="#ff6a6f"/>
+      <use class="burst" href="#bst" x="312" y="-8" width="100" height="100" color="#ff6a6f"/>
+      <use class="burst" href="#bst" x="322" y="76" width="82"  height="82"  color="#e8b23a"/>
+    </svg>
+    <div class="festival">福山夏まつり2027 あしだ川花火大会</div>
+    <h1>ご予約ありがとうございます</h1>
+  </header>
+  <div class="wrap">
+    <div class="card done">
+      <div class="check">✅</div>
+      <div>予約番号</div>
+      <div class="no" id="doneNo">#0</div>
+      <div class="msg">スクリーンショットで保存しておくと安心です</div>
+
+      <div class="summary" id="doneSummary"></div>
+
+      <button class="btn line" id="lineBtn">店舗LINEで予約を確定する</button>
+      <button class="btn ghost" id="copyBtn">予約内容をコピー</button>
+
+      <div class="note">
+        ①「店舗LINE」を友だち追加 →②予約内容を送信 →③お店から確定のお返事がきます。<br>
+        料金 <b id="doneFee">5,000円</b> は当日、現地で <b>💴現金</b> または <b>📱PayPay</b> でお支払いください。
+      </div>
+      <div class="notice-box" style="margin-top:16px;text-align:left">
+        <div class="nh">⚠️ ご来店時間のお願い</div>
+        <p>当日は通常のお客様も駐車場をご利用のため、ご予約のお客様は <span class="big">18時以降</span> にご来店ください。</p>
+      </div>
+      <button class="btn ghost" id="againBtn" style="margin-top:18px">別の予約をする</button>
+    </div>
+  </div>
+</div>
+
+<!-- 店舗：予約一覧（合言葉ロックつき） -->
+<div id="admin" class="hide">
+  <div class="adminbar">
+    <b>🅿️ 予約一覧（店舗用）</b>
+    <a id="adminBack">← お客さん画面へ</a>
+  </div>
+
+  <!-- 合言葉入力 -->
+  <div id="passGate" class="wrap pass">
+    <div class="card">
+      <h2>店舗用ページ</h2>
+      <p class="lead">合言葉を入れてください</p>
+      <input type="text" id="passInput" placeholder="合言葉">
+      <button class="btn" id="passBtn">ひらく</button>
+      <div class="err" id="passErr"></div>
+    </div>
+  </div>
+
+  <!-- 一覧本体 -->
+  <div id="adminBody" class="wrap hide">
+    <div class="stat">
+      <div><div class="k">予約</div><div class="v" id="stActive">0</div></div>
+      <div><div class="k">受付済</div><div class="v" id="stRecv">0</div></div>
+      <div><div class="k">売上（見込）</div><div class="v money" id="stMoney">¥0</div></div>
+    </div>
+    <div id="resList"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   設定（ここだけ直せば内容を変えられます）
+   ========================================================= */
+const EVENT_ID   = "2027-08-15";           // お祭りの日（予約データの保存先の名前）
+const EVENT_DATE = "2027年8月15日（日）"; // 画面に出す日付
+const TOTAL      = 20;                      // 全台数
+const PRICE      = 4000;                    // 1台の料金（円）
+const ADMIN_PASS = "matsuri";              // 店舗ページの合言葉（好きに変えてOK）
+
+// ▼▼ 店舗LINEの「友だち追加URL」が決まったら、下の "" の中に貼ってください ▼▼
+//    例）const LINE_ADD_URL = "https://lin.ee/xxxxxxx";
+const LINE_ADD_URL = "";
+/* ========================================================= */
+
+const yen = (n) => "¥" + Number(n).toLocaleString("ja-JP");
+const $ = (s) => document.querySelector(s);
+
+// 画面へ設定を反映
+$("#hDate").textContent = EVENT_DATE;
+$("#hPrice").textContent = "1台 " + Number(PRICE).toLocaleString("ja-JP") + "円 ／ 当日お支払い";
+$("#remainTotal").textContent = "全" + TOTAL + "台";
+$("#doneFee").textContent = Number(PRICE).toLocaleString("ja-JP") + "円";
+
+let FB = null;
+let lastReservation = null; // 直近の予約（完了画面・コピー用）
+let payMethod = "現金";      // 選んだ支払い方法（初期は現金）
+
+window.addEventListener("fb-ready", () => { FB = window.FB; start(); });
+// 念のため（すでに準備できていた場合）
+if (window.FB) { FB = window.FB; start(); }
+
+function start(){
+  watchRemaining();   // 残り台数をリアルタイム表示
+  bindCustomer();     // 予約フォームの動き
+  bindAdmin();        // 店舗画面の動き
+}
+
+/* ---------- 残り台数（リアルタイム） ---------- */
+function watchRemaining(){
+  const { db, doc, onSnapshot } = FB;
+  onSnapshot(doc(db, "parking", EVENT_ID), (snap) => {
+    const active = snap.exists() ? (snap.data().active || 0) : 0;
+    const remain = Math.max(0, TOTAL - active);
+    $("#remainNum").textContent = remain;
+    $("#remainBar").style.width = Math.round(active / TOTAL * 100) + "%";
+    const box = $("#remainBox");
+    const btn = $("#reserveBtn");
+    if (remain <= 0){
+      box.classList.add("full");
+      $("#remainNum").textContent = "満車";
+      btn.disabled = true; btn.textContent = "満車です（予約受付終了）";
+    } else {
+      box.classList.remove("full");
+      btn.disabled = false; btn.textContent = "この内容で予約する";
+    }
+  }, (err) => {
+    console.warn("残り台数の取得に失敗", err);
+    $("#cloudWarn").classList.remove("hide");
+  });
+}
+
+/* ---------- お客さん：予約 ---------- */
+function bindCustomer(){
+  $("#toAdmin").onclick = () => showView("admin");
+  $("#reserveBtn").onclick = doReserve;
+  $("#againBtn").onclick = () => {
+    $("#fName").value = $("#fPhone").value = $("#fPlate").value = "";
+    payMethod = "現金"; // 支払い方法を初期に戻す
+    document.querySelectorAll(".paybtn").forEach((x) => x.classList.toggle("on", x.getAttribute("data-pay") === "現金"));
+    showView("customer");
+  };
+  $("#copyBtn").onclick = copyReservation;
+  $("#lineBtn").onclick = openLine;
+
+  // 電話番号：入力すると自動でハイフンを入れる
+  $("#fPhone").addEventListener("input", (e) => {
+    e.target.value = formatPhone(e.target.value);
+  });
+
+  // 支払い方法の選択ボタン
+  document.querySelectorAll(".paybtn").forEach((b) => b.onclick = () => {
+    document.querySelectorAll(".paybtn").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on");
+    payMethod = b.getAttribute("data-pay");
+  });
+}
+
+async function doReserve(){
+  const name  = $("#fName").value.trim();
+  const phone = $("#fPhone").value.trim();
+  const plate = $("#fPlate").value.trim();
+  const err = $("#formErr");
+  err.textContent = "";
+
+  if (!name || !phone || !plate){
+    err.textContent = "お名前・電話番号・車のナンバーをすべて入れてください";
+    return;
+  }
+  if (!isPlateComplete(plate)){
+    err.textContent = "車のナンバーは「地名・分類番号・ひらがな・番号」をすべて入れてください（例：福山 580 す 12-34）";
+    $("#fPlate").focus();
+    return;
+  }
+  if (!FB){ err.textContent = "ネットにつながっていません。少し待ってからお試しください"; return; }
+
+  const btn = $("#reserveBtn");
+  btn.disabled = true; btn.textContent = "予約中…";
+
+  try {
+    const no = await reserveTransaction({ name, phone, plate, pay: payMethod });
+    lastReservation = { no, name, phone, plate, pay: payMethod };
+    showDone(lastReservation);
+  } catch (e) {
+    if (e.message === "FULL"){
+      err.textContent = "申し訳ありません、ちょうど満車になりました";
+    } else {
+      console.warn(e);
+      err.textContent = "予約に失敗しました。もう一度お試しください";
+    }
+    btn.disabled = false; btn.textContent = "この内容で予約する";
+  }
+}
+
+// ★ダブり防止：トランザクションで「空きを確認→番号を発行→予約を保存」を一気に行う
+function reserveTransaction({ name, phone, plate, pay }){
+  const { db, doc, collection, runTransaction } = FB;
+  const evRef = doc(db, "parking", EVENT_ID);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(evRef);
+    const data = snap.exists() ? snap.data() : { seq:0, active:0 };
+    const active = data.active || 0;
+    if (active >= TOTAL) throw new Error("FULL");   // 満車なら中止
+    const no = (data.seq || 0) + 1;                 // 予約番号（重複しない通し番号）
+    tx.set(evRef, { total:TOTAL, price:PRICE, date:EVENT_ID, seq:no, active:active+1 }, { merge:true });
+    const resRef = doc(collection(db, "parking", EVENT_ID, "reservations"));
+    tx.set(resRef, { no, name, phone, plate, pay, status:"予約", ts: Date.now() });
+    return no;
+  });
+}
+
+function reservationText(r){
+  return `【${EVENT_DATE} 駐車場予約】\n予約番号：#${r.no}\nお名前：${r.name}\n電話：${r.phone}\nナンバー：${r.plate}\n支払い方法：${r.pay}（当日変更OK）\n料金：${Number(PRICE).toLocaleString("ja-JP")}円（当日払い）\n※ご来店は18時以降にお願いします`;
+}
+
+function showDone(r){
+  $("#doneNo").textContent = "#" + r.no;
+  $("#doneSummary").innerHTML =
+    `<div><b>予約番号</b> #${r.no}</div>` +
+    `<div><b>お名前</b> ${escapeHtml(r.name)}</div>` +
+    `<div><b>電話</b> ${escapeHtml(r.phone)}</div>` +
+    `<div><b>ナンバー</b> ${escapeHtml(r.plate)}</div>` +
+    `<div><b>支払い</b> ${escapeHtml(r.pay)} <span style="color:var(--sub);font-size:13px">（当日変更OK）</span></div>`;
+  showView("done");
+}
+
+function openLine(){
+  if (!LINE_ADD_URL){
+    alert("店舗LINEのURLがまだ設定されていません。\n（設定後に、このボタンからLINEを開けるようになります）\n\n先に「予約内容をコピー」を押して、LINEに貼り付けて送ってください。");
+    return;
+  }
+  // まずLINEの友だち追加を開く。予約内容はコピーしておくと貼り付けやすい
+  copyReservation(true);
+  window.open(LINE_ADD_URL, "_blank");
+}
+
+function copyReservation(silent){
+  if (!lastReservation) return;
+  const text = reservationText(lastReservation);
+  navigator.clipboard?.writeText(text).then(() => {
+    if (!silent) toast("予約内容をコピーしました。LINEに貼り付けて送ってください");
+  }).catch(() => {
+    if (!silent) alert(text);
+  });
+}
+
+/* ---------- 店舗：予約一覧 ---------- */
+let adminUnsub = null;
+function bindAdmin(){
+  $("#adminBack").onclick = () => showView("customer");
+  $("#passBtn").onclick = tryPass;
+  $("#passInput").addEventListener("keydown", (e) => { if (e.key === "Enter") tryPass(); });
+  // 一度合言葉を入れたら、この端末では覚えておく
+  if (localStorage.getItem("parking_admin_ok") === "1"){ /* 開いたときに解錠 */ }
+}
+
+function tryPass(){
+  const v = $("#passInput").value.trim();
+  if (v === ADMIN_PASS){
+    localStorage.setItem("parking_admin_ok", "1");
+    unlockAdmin();
+  } else {
+    $("#passErr").textContent = "合言葉がちがいます";
+  }
+}
+
+function unlockAdmin(){
+  $("#passGate").classList.add("hide");
+  $("#adminBody").classList.remove("hide");
+  watchReservations();
+}
+
+function watchReservations(){
+  if (adminUnsub) return; // 二重登録しない
+  const { db, collection, onSnapshot, query, orderBy } = FB;
+  adminUnsub = onSnapshot(query(collection(db, "parking", EVENT_ID, "reservations"), orderBy("no", "asc")), (snap) => {
+    const list = snap.docs.map((d) => Object.assign({ id:d.id }, d.data()));
+    renderReservations(list);
+  }, (err) => console.warn("予約一覧の取得に失敗", err));
+}
+
+function renderReservations(list){
+  const active = list.filter((r) => r.status !== "取消");
+  const recv   = list.filter((r) => r.status === "受付済");
+  $("#stActive").textContent = active.length;
+  $("#stRecv").textContent = recv.length;
+  $("#stMoney").textContent = yen(recv.length * PRICE);
+
+  const box = $("#resList");
+  if (!list.length){ box.innerHTML = `<div class="empty">まだ予約はありません</div>`; return; }
+
+  box.innerHTML = list.map((r) => {
+    const cls = r.status === "取消" ? "cancel" : (r.status === "受付済" ? "done" : "");
+    const badge = r.status === "受付済" ? '<span class="badge g">受付済</span>'
+                : r.status === "取消"   ? '<span class="badge x">取消</span>'
+                : '<span class="badge y">予約</span>';
+    const acts = r.status === "取消" ? "" : `
+      <div class="acts">
+        <button class="recv ${r.status==="受付済"?"on":""}" data-recv="${r.id}" data-cur="${r.status}">
+          ${r.status==="受付済" ? "受付を取り消す" : "受付する（集金）"}
+        </button>
+        <button class="cxl" data-cancel="${r.id}">予約を取消</button>
+      </div>`;
+    return `
+      <div class="res ${cls}">
+        <div class="top"><span class="rno">#${r.no}</span>${badge}</div>
+        <div class="rname">${escapeHtml(r.name||"")}</div>
+        <div class="rinfo">📞 ${escapeHtml(r.phone||"")}<br>🚗 ${escapeHtml(r.plate||"")}<br>💰 ${escapeHtml(r.pay||"未選択")}</div>
+        ${acts}
+      </div>`;
+  }).join("");
+
+  box.querySelectorAll("[data-recv]").forEach((b) => b.onclick = () => {
+    const cur = b.getAttribute("data-cur");
+    setStatus(b.getAttribute("data-recv"), cur === "受付済" ? "予約" : "受付済");
+  });
+  box.querySelectorAll("[data-cancel]").forEach((b) => b.onclick = () => {
+    if (confirm("この予約を取り消しますか？（1台ぶん空きが戻ります）")) cancelReservation(b.getAttribute("data-cancel"));
+  });
+}
+
+function setStatus(id, status){
+  const { db, doc, updateDoc } = FB;
+  updateDoc(doc(db, "parking", EVENT_ID, "reservations", id), { status }).catch((e) => console.warn(e));
+}
+
+// 取消：予約を「取消」にして、空き台数を1台戻す（トランザクションで安全に）
+function cancelReservation(id){
+  const { db, doc, runTransaction } = FB;
+  const evRef  = doc(db, "parking", EVENT_ID);
+  const resRef = doc(db, "parking", EVENT_ID, "reservations", id);
+  runTransaction(db, async (tx) => {
+    const resSnap = await tx.get(resRef);
+    if (!resSnap.exists() || resSnap.data().status === "取消") return;
+    const evSnap = await tx.get(evRef);
+    const active = evSnap.exists() ? (evSnap.data().active || 0) : 0;
+    tx.update(evRef, { active: Math.max(0, active - 1) });
+    tx.update(resRef, { status: "取消" });
+  }).catch((e) => console.warn("取消に失敗", e));
+}
+
+/* ---------- 画面切り替え・小道具 ---------- */
+function showView(name){
+  ["customer","done","admin"].forEach((v) => $("#"+v).classList.toggle("hide", v !== name));
+  if (name === "admin" && localStorage.getItem("parking_admin_ok") === "1") unlockAdmin();
+  window.scrollTo(0,0);
+}
+
+// 車のナンバーが「地名・分類番号・ひらがな・一連番号」を満たしているか
+function isPlateComplete(p){
+  const s = String(p);
+  const hasKanji = /[一-龯]/.test(s);      // 地名（漢字）
+  const hasKana  = /[぀-ゟ]/.test(s);      // ひらがな
+  const digits   = (s.match(/[0-9０-９]/g) || []).length; // 数字（分類＋一連）
+  return hasKanji && hasKana && digits >= 3;
+}
+
+// 電話番号にハイフンを入れる（携帯=3-4-4／固定=3-3-4、東京03・大阪06=2-4-4）
+function formatPhone(v){
+  const d = String(v).replace(/\D/g, "").slice(0, 11); // 数字だけ・最大11桁
+  if (d.length <= 3) return d;
+  // 携帯（090/080/070 など）または11桁 → 3-4-4
+  if (d.length >= 11 || /^0[789]0/.test(d)){
+    if (d.length <= 7) return d.slice(0,3) + "-" + d.slice(3);
+    return d.slice(0,3) + "-" + d.slice(3,7) + "-" + d.slice(7);
+  }
+  // 固定電話10桁
+  if (d.length === 10){
+    if (/^0[36]/.test(d)) return d.slice(0,2) + "-" + d.slice(2,6) + "-" + d.slice(6); // 03・06 → 2-4-4
+    return d.slice(0,3) + "-" + d.slice(3,6) + "-" + d.slice(6);                       // その他 → 3-3-4
+  }
+  // 入力途中
+  if (d.length <= 6) return d.slice(0,3) + "-" + d.slice(3);
+  return d.slice(0,3) + "-" + d.slice(3,6) + "-" + d.slice(6);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+let toastTimer = null;
+function toast(msg){
+  let t = $("#toast");
+  if (!t){
+    t = document.createElement("div"); t.id = "toast";
+    t.style.cssText = "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#2a2320;color:#fff;padding:12px 18px;border-radius:999px;font-size:14px;font-weight:700;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:90%;text-align:center";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = "1";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.opacity = "0", 2600);
+}
+</script>

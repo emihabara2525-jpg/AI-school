@@ -1,0 +1,11 @@
+{
+  "name": "お祭り駐車場 予約",
+  "short_name": "駐車場予約",
+  "description": "お祭り当日の店舗駐車場を予約できる、手数料ゼロの予約システム",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff7f2",
+  "theme_color": "#c1272d"
+}
