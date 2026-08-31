@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>わたしのカレンダー🌸</title>
+<!-- ホーム画面のアイコン設定 -->
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="わたしのカレンダー">
+<meta name="theme-color" content="#FFE082">
+<style>
+  :root{
+    --yellow:#FFF3C4;      /* パステルイエロー（背景） */
+    --yellow-deep:#FFE082;
+    --cream:#FFFBEA;       /* カード */
+    --pink:#FF9EC4;        /* 生理・アクセント */
+    --pink-soft:#FFD6E8;
+    --purple:#C9A7EB;
+    --text:#7A6A3A;        /* やさしい茶色文字 */
+    --text-soft:#A99A6E;
+    --ring-bg:#FFE9A8;
+    --ok:#8FD9B6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; padding:0;
+    font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN",-apple-system,"Rounded Mplus 1c","Segoe UI",sans-serif;
+    background:linear-gradient(160deg,#FFF7D6 0%,#FFF0F6 100%);
+    color:var(--text);
+    min-height:100vh;
+    padding:14px 12px 40px;
+    max-width:460px; margin:0 auto;
+    -webkit-user-select:none; user-select:none;
+  }
+  h1{ text-align:center; font-size:20px; margin:6px 0 12px; letter-spacing:1px;}
+  .card{
+    background:var(--cream);
+    border-radius:26px;
+    padding:18px 16px;
+    margin-bottom:14px;
+    box-shadow:0 6px 16px rgba(255,190,120,.18);
+  }
+
+  /* お知らせバナー */
+  #notice{
+    display:none;
+    background:linear-gradient(120deg,var(--pink-soft),#FFE9F2);
+    border-radius:22px; padding:14px 16px; margin-bottom:14px;
+    text-align:center; font-size:15px; font-weight:bold; color:#C25A8A;
+    box-shadow:0 4px 12px rgba(255,150,190,.25);
+  }
+
+  /* 上の予測表示 */
+  .top{ text-align:center; }
+  .top .label{ font-size:14px; color:var(--text-soft);}
+  .top .nextdate{ font-size:30px; font-weight:bold; color:var(--pink); letter-spacing:1px;}
+  .top .remain{
+    display:inline-block; background:var(--yellow-deep); color:#8a6d1f;
+    padding:4px 14px; border-radius:999px; font-size:15px; font-weight:bold; margin-top:4px;
+  }
+
+  /* 星 */
+  .stars{ display:flex; justify-content:center; gap:22px; margin-top:12px; font-size:14px;}
+  .stars .grp span{ cursor:pointer; font-size:20px; }
+
+  /* 円 */
+  .ring-wrap{ display:flex; justify-content:center; margin:6px 0 2px;}
+  svg{ width:290px; height:290px; max-width:86vw;}
+  .center-today{ font-size:13px; fill:var(--text-soft);}
+  .center-date{ font-size:30px; font-weight:bold; fill:var(--pink);}
+  .center-phase{ font-size:16px; font-weight:bold; fill:var(--purple);}
+
+  /* 体調記録ボタン */
+  .rec-btn{
+    display:block; margin:6px auto 0; background:var(--pink); color:#fff; border:none;
+    padding:11px 26px; border-radius:999px; font-size:16px; font-weight:bold;
+    box-shadow:0 4px 10px rgba(255,150,190,.4); cursor:pointer;
+    font-family:inherit;
+  }
+  .rec-btn:active{ transform:scale(.96);}
+
+  /* 体調メモパネル */
+  #moodPanel{ display:none; margin-top:12px; }
+  .mood-grid{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:6px;}
+  .mood{
+    background:#fff; border:2px solid var(--yellow-deep); color:var(--text);
+    border-radius:999px; padding:8px 14px; font-size:14px; cursor:pointer;
+    font-family:inherit;
+  }
+  .mood.on{ background:var(--pink-soft); border-color:var(--pink); color:#C25A8A; font-weight:bold;}
+  .sub{ text-align:center; font-size:13px; color:var(--text-soft); margin:8px 0 2px;}
+
+  /* メッセージ */
+  #message{ text-align:center; font-size:14.5px; line-height:1.7; color:#8a7a4a;}
+  #message .emo{ font-size:22px; display:block; margin-bottom:4px;}
+
+  /* カレンダー */
+  .cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .cal-head button{ background:var(--yellow-deep); border:none; width:38px; height:38px; border-radius:50%; font-size:18px; cursor:pointer; color:#8a6d1f; font-weight:bold;}
+  .cal-head .ym{ font-size:17px; font-weight:bold;}
+  .week{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; color:var(--text-soft); margin-bottom:4px;}
+  .week .sun{color:#F58ea8;} .week .sat{color:#8ea8f5;}
+  .days{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+  .day{
+    aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; position:relative;
+    border-radius:50%; font-size:15px; cursor:pointer; color:var(--text);
+  }
+  .day.empty{ cursor:default;}
+  .day.today{ outline:2px dashed var(--purple); outline-offset:-2px;}
+  .day.period{ background:var(--pink); color:#fff; font-weight:bold;}
+  .day.predict{ background:var(--pink-soft); color:#C25A8A;}
+  .day .mk{ position:absolute; bottom:0px; font-size:10px;}
+  .hint{ text-align:center; font-size:12.5px; color:var(--text-soft); margin-top:10px; line-height:1.6;}
+  .legend{ display:flex; justify-content:center; gap:16px; font-size:12px; color:var(--text-soft); margin-top:8px;}
+  .legend i{ display:inline-block; width:14px; height:14px; border-radius:50%; vertical-align:-2px; margin-right:3px;}
+</style>
+</head>
+<body>
+
+<h1>🌸 わたしのカレンダー 🌸</h1>
+
+<div id="notice"></div>
+
+<!-- 円と予測のカード -->
+<div class="card">
+  <div class="top">
+    <div class="label">つぎの生理日</div>
+    <div class="nextdate" id="nextDate">— / —</div>
+    <div class="remain" id="remain">あと ― 日</div>
+  </div>
+
+  <div class="stars">
+    <div class="grp">からだ <span data-kind="body" data-v="1">☆</span><span data-kind="body" data-v="2">☆</span><span data-kind="body" data-v="3">☆</span></div>
+    <div class="grp">こころ <span data-kind="mind" data-v="1">☆</span><span data-kind="mind" data-v="2">☆</span><span data-kind="mind" data-v="3">☆</span></div>
+  </div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 300 300" id="ring">
+      <circle cx="150" cy="150" r="120" fill="none" stroke="var(--ring-bg)" stroke-width="22"/>
+      <circle id="periodArc" cx="150" cy="150" r="120" fill="none" stroke="var(--pink)" stroke-width="22"
+              stroke-linecap="round" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
+      <text class="center-today" x="150" y="120" text-anchor="middle">TODAY</text>
+      <text class="center-date" x="150" y="152" text-anchor="middle" id="centerDate">--/--</text>
+      <text class="center-phase" x="150" y="182" text-anchor="middle" id="centerPhase">ふつうの日</text>
+      <text id="marker" x="150" y="42" text-anchor="middle" font-size="26">🌸</text>
+    </svg>
+  </div>
+
+  <button class="rec-btn" id="recBtn">✎ 体調を記録</button>
+
+  <div id="moodPanel">
+    <div class="sub">きょうの体調をタップしてね（何こでもOK）</div>
+    <div class="mood-grid" id="moodGrid"></div>
+  </div>
+
+  <div class="sub" style="margin-top:14px;">🌷 きょうのメッセージ</div>
+  <div id="message"></div>
+</div>
+
+<!-- カレンダー -->
+<div class="card">
+  <div class="cal-head">
+    <button id="prevM">‹</button>
+    <div class="ym" id="ym"></div>
+    <button id="nextM">›</button>
+  </div>
+  <div class="week"><div class="sun">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="sat">土</div></div>
+  <div class="days" id="days"></div>
+  <div class="legend">
+    <span><i style="background:var(--pink)"></i>生理の日</span>
+    <span><i style="background:var(--pink-soft)"></i>よそくの日</span>
+  </div>
+  <div class="hint">生理がきた日を<b>タップ</b>すると🌸に記録できるよ。<br>まちがえたら<b>もう一回タップ</b>で消せるよ💛</div>
+</div>
+
+<script>
+// ====== データ保存（この端末だけ） ======
+const KEY = "myseiri_v1";
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+let data = load();
+data.periodDays = data.periodDays || {};   // {"2026-08-31": true}
+data.mood = data.mood || {};               // {"2026-08-31": {body:2, mind:3, tags:["おなか痛い"]}}
+
+// ====== 日付ユーティリティ ======
+function ymd(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
+function parse(s){ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
+function addDays(dt,n){ const x=new Date(dt); x.setDate(x.getDate()+n); return x; }
+function diffDays(a,b){ return Math.round((parse(a)-parse(b))/86400000); }
+const today = new Date(); today.setHours(0,0,0,0);
+const todayStr = ymd(today);
+
+// ====== 周期の計算 ======
+// 連続した生理の日を1回の「生理」としてまとめ、始まり日リストを作る
+function getPeriods(){
+  const days = Object.keys(data.periodDays).filter(k=>data.periodDays[k]).sort();
+  const periods=[]; let run=[];
+  for(let i=0;i<days.length;i++){
+    if(run.length===0){ run=[days[i]]; }
+    else if(diffDays(days[i], run[run.length-1])===1){ run.push(days[i]); }
+    else { periods.push({start:run[0], end:run[run.length-1], len:run.length}); run=[days[i]]; }
+  }
+  if(run.length) periods.push({start:run[0], end:run[run.length-1], len:run.length});
+  return periods;
+}
+function getStats(){
+  const p=getPeriods();
+  const starts=p.map(x=>x.start);
+  let cycle=28, haveCycle=false;
+  if(starts.length>=2){
+    let sum=0,c=0;
+    for(let i=1;i<starts.length;i++){ const d=diffDays(starts[i],starts[i-1]); if(d>=15&&d<=60){ sum+=d;c++; } }
+    if(c>0){ cycle=Math.round(sum/c); haveCycle=true; }
+  }
+  const lastStart = starts.length? starts[starts.length-1] : null;
+  const avgLen = p.length? Math.round(p.reduce((s,x)=>s+x.len,0)/p.length) : 5;
+  let predict=null;
+  if(lastStart){
+    // 今日を過ぎている予測は次の周期にずらす
+    let np=addDays(parse(lastStart), cycle);
+    while(np < today){ np=addDays(np, cycle); }
+    predict=ymd(np);
+  }
+  return {periods:p, cycle, haveCycle, lastStart, predict, avgLen};
+}
+
+// ====== 円グラフの更新 ======
+const C = 2*Math.PI*120;
+function updateRing(st){
+  const cDate=document.getElementById("centerDate");
+  const cPhase=document.getElementById("centerPhase");
+  const arc=document.getElementById("periodArc");
+  const marker=document.getElementById("marker");
+  cDate.textContent = (today.getMonth()+1)+"/"+today.getDate();
+
+  let phase="ふつうの日", frac=0, periodFrac=0;
+  if(st.lastStart && st.predict){
+    const total = diffDays(st.predict, st.lastStart); // この周期の長さ
+    const pos = diffDays(todayStr, st.lastStart);      // 今日の位置
+    frac = Math.max(0, Math.min(1, pos/total));
+    periodFrac = Math.min(1, st.avgLen/total);
+  }
+  // 生理の期間アーク（ピンク）
+  arc.setAttribute("stroke-dasharray", (C*periodFrac)+" "+C);
+  // マーカー位置
+  const ang = frac*2*Math.PI - Math.PI/2;
+  const mx = 150 + 120*Math.cos(ang);
+  const my = 150 + 120*Math.sin(ang);
+  marker.setAttribute("x", mx); marker.setAttribute("y", my+9);
+
+  // 今の時期
+  if(data.periodDays[todayStr]) phase="生理中🌸";
+  else if(st.predict){
+    const d=diffDays(st.predict, todayStr);
+    if(d<=3 && d>=0) phase="そろそろ期";
+    else if(d<0) phase="ふつうの日";
+    else phase="ふつうの日";
+  }
+  cPhase.textContent = phase;
+}
+
+// ====== 上の予測＆お知らせ＆メッセージ ======
+function updateTop(st){
+  const nd=document.getElementById("nextDate");
+  const rm=document.getElementById("remain");
+  const notice=document.getElementById("notice");
+  const msg=document.getElementById("message");
+
+  if(st.predict){
+    const p=parse(st.predict);
+    nd.textContent=(p.getMonth()+1)+" / "+p.getDate();
+    const d=diffDays(st.predict, todayStr);
+    rm.textContent = d>0? ("あと "+d+" 日") : (d===0? "今日ごろかも" : "そろそろかな");
+    // お知らせバナー
+    if(d>=0 && d<=3){
+      notice.style.display="block";
+      notice.textContent = d===0? "🌸 きょうは よそく日だよ。むりしないでね" : ("🌸 あと"+d+"日で よそく日だよ。じゅんびしてね");
+    } else notice.style.display="none";
+  }else{
+    nd.textContent="— / —";
+    rm.textContent="まだデータがないよ";
+    notice.style.display="none";
+  }
+
+  // メッセージ
+  let m;
+  if(data.periodDays[todayStr]){
+    m={e:"🌸",t:"生理中はおなかが痛くなることもあるよ。<br>あたたかくして、むりしないでね💛"};
+  }else if(st.predict && diffDays(st.predict,todayStr)>=0 && diffDays(st.predict,todayStr)<=3){
+    m={e:"🌷",t:"そろそろ生理がくるころ。<br>ナプキンをかばんに入れておくと安心だよ😊"};
+  }else if(!st.lastStart){
+    m={e:"🐣",t:"生理がきたら、カレンダーの日をタップしてね。<br>だんだん「つぎの日」がわかるようになるよ🌸"};
+  }else{
+    m={e:"🌈",t:"きょうも元気にすごそうね。<br>予測がずれても心配いらないよ、ゆっくりでいいの💛"};
+  }
+  msg.innerHTML='<span class="emo">'+m.e+'</span>'+m.t;
+}
+
+// ====== 星（体調）======
+function updateStars(){
+  const md=data.mood[todayStr]||{};
+  document.querySelectorAll('.stars span').forEach(s=>{
+    const kind=s.dataset.kind, v=+s.dataset.v;
+    s.textContent = (md[kind]&&v<=md[kind])? "⭐" : "☆";
+  });
+}
+document.querySelectorAll('.stars span').forEach(s=>{
+  s.addEventListener('click',()=>{
+    const kind=s.dataset.kind, v=+s.dataset.v;
+    data.mood[todayStr]=data.mood[todayStr]||{};
+    // 同じ星をもう一回押したら0に
+    data.mood[todayStr][kind] = (data.mood[todayStr][kind]===v)? 0 : v;
+    save(data); updateStars();
+  });
+});
+
+// ====== 体調メモ ======
+const MOODS=["元気😊","おなか痛い😣","ねむい😴","イライラ😤","かなしい😢","ずつう🤕"];
+function buildMood(){
+  const g=document.getElementById("moodGrid"); g.innerHTML="";
+  const tags=(data.mood[todayStr]&&data.mood[todayStr].tags)||[];
+  MOODS.forEach(t=>{
+    const b=document.createElement("button");
+    b.className="mood"+(tags.includes(t)?" on":""); b.textContent=t;
+    b.onclick=()=>{
+      data.mood[todayStr]=data.mood[todayStr]||{};
+      const arr=data.mood[todayStr].tags||[];
+      const i=arr.indexOf(t);
+      if(i>=0) arr.splice(i,1); else arr.push(t);
+      data.mood[todayStr].tags=arr; save(data); buildMood();
+    };
+    g.appendChild(b);
+  });
+}
+document.getElementById("recBtn").onclick=()=>{
+  const p=document.getElementById("moodPanel");
+  p.style.display = p.style.display==="block"? "none":"block";
+  buildMood();
+};
+
+// ====== カレンダー ======
+let viewY=today.getFullYear(), viewM=today.getMonth();
+function renderCal(){
+  const st=getStats();
+  document.getElementById("ym").textContent=viewY+"年 "+(viewM+1)+"月";
+  const first=new Date(viewY,viewM,1).getDay();
+  const last=new Date(viewY,viewM+1,0).getDate();
+  const days=document.getElementById("days"); days.innerHTML="";
+  for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="day empty"; days.appendChild(e); }
+  for(let d=1;d<=last;d++){
+    const dt=new Date(viewY,viewM,d); const key=ymd(dt);
+    const el=document.createElement("div"); el.className="day"; el.textContent=d;
+    if(key===todayStr) el.classList.add("today");
+    if(data.periodDays[key]){ el.classList.add("period"); const m=document.createElement("span"); m.className="mk"; m.textContent="🌸"; el.appendChild(m); }
+    else if(st.predict===key){ el.classList.add("predict"); const m=document.createElement("span"); m.className="mk"; m.textContent="💧"; el.appendChild(m); }
+    el.onclick=()=>{
+      if(data.periodDays[key]) delete data.periodDays[key]; else data.periodDays[key]=true;
+      save(data); refresh();
+    };
+    days.appendChild(el);
+  }
+}
+document.getElementById("prevM").onclick=()=>{ viewM--; if(viewM<0){viewM=11;viewY--;} renderCal(); };
+document.getElementById("nextM").onclick=()=>{ viewM++; if(viewM>11){viewM=0;viewY++;} renderCal(); };
+
+// ====== まとめて更新 ======
+function refresh(){
+  const st=getStats();
+  updateTop(st); updateRing(st); updateStars(); renderCal();
+}
+refresh();
+</script>
+</body>
+</html>
