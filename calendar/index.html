@@ -174,7 +174,7 @@
 <!-- 円と予測のカード -->
 <div class="card">
   <div class="top">
-    <div class="label">つぎの生理予想日</div>
+    <div class="label">つぎの生理予測日</div>
     <div class="nextdate" id="nextDate">— / —</div>
     <div class="remain" id="remain">あと ― 日</div>
     <div class="more-preds" id="morePreds"></div>
@@ -219,7 +219,7 @@
   <div class="days" id="days"></div>
   <div class="legend">
     <span><i style="background:var(--pink)"></i>生理の日</span>
-    <span><i style="background:var(--pink-soft)"></i>よそくの日</span>
+    <span><i style="background:var(--pink-soft)"></i>予測の日</span>
   </div>
   <div class="hint">生理がきた日を<b>タップ</b>すると🌸に記録できるよ。<br>まちがえたら<b>もう一回タップ</b>で消せるよ💛</div>
   <div style="text-align:center; margin-top:14px;">
@@ -334,7 +334,7 @@ function getStats(){
     let np=addDays(parse(lastStart), cycle);
     while(np < today){ np=addDays(np, cycle); }
     predict=ymd(np);
-    // 3回先までの予想開始日
+    // 3回先までの予測開始日
     let cur=new Date(np);
     for(let i=0;i<3;i++){ predicts.push(ymd(cur)); cur=addDays(cur, cycle); }
   }
@@ -392,12 +392,12 @@ function updateTop(st){
     // お知らせバナー
     if(d>=0 && d<=3){
       notice.style.display="block";
-      notice.textContent = d===0? "🌸 きょうは よそく日だよ。むりしないでね" : ("🌸 あと"+d+"日で よそく日だよ。じゅんびしてね");
+      notice.textContent = d===0? "🌸 きょうは 予測日だよ。むりしないでね" : ("🌸 あと"+d+"日で 予測日だよ。じゅんびしてね");
     } else notice.style.display="none";
-    // そのあとの予想（2回目・3回目＝3か月先まで）
+    // そのあとの予測（2回目・3回目＝3か月先まで）
     const rest=(st.predicts||[]).slice(1);
     if(rest.length){
-      more.innerHTML="そのあとの予想日🌸<br>"+rest.map(s=>{ const x=parse(s); return '<span class="pill">'+(x.getMonth()+1)+"/"+x.getDate()+"</span>"; }).join("");
+      more.innerHTML="そのあとの予測日🌸<br>"+rest.map(s=>{ const x=parse(s); return '<span class="pill">'+(x.getMonth()+1)+"/"+x.getDate()+"</span>"; }).join("");
     } else more.innerHTML="";
   }else{
     nd.textContent="— / —";
@@ -493,7 +493,7 @@ function renderCal(){
   document.getElementById("ym").textContent=viewY+"年 "+(viewM+1)+"月";
   const first=new Date(viewY,viewM,1).getDay();
   const last=new Date(viewY,viewM+1,0).getDate();
-  // 予想日は「初日だけ」に印（3か月先までの各回の開始日）
+  // 予測日は「初日だけ」に印（3か月先までの各回の開始日）
   const predSet=new Set(st.predicts||[]);
   const hol=jpHolidays(viewY);
   const days=document.getElementById("days"); days.innerHTML="";
