@@ -467,9 +467,8 @@ function renderCal(){
   document.getElementById("ym").textContent=viewY+"年 "+(viewM+1)+"月";
   const first=new Date(viewY,viewM,1).getDay();
   const last=new Date(viewY,viewM+1,0).getDate();
-  // 予想の期間（3か月先まで、各回 avgLen 日ぶん）をまとめておく
-  const predSet=new Set();
-  (st.predicts||[]).forEach(s=>{ for(let i=0;i<st.avgLen;i++){ predSet.add(ymd(addDays(parse(s), i))); } });
+  // 予想日は「初日だけ」に印（3か月先までの各回の開始日）
+  const predSet=new Set(st.predicts||[]);
   const days=document.getElementById("days"); days.innerHTML="";
   for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="day empty"; days.appendChild(e); }
   for(let d=1;d<=last;d++){
