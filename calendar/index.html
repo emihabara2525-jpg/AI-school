@@ -77,10 +77,10 @@
   .center-phase{ font-size:16px; font-weight:bold; fill:var(--purple);}
   /* 4つの時期の色 */
   .phase-arc{ stroke-linecap:butt; }
-  #arcPeriod{ stroke:var(--pink); }
-  #arcFollicular{ stroke:#8FD3F0; }
-  #arcOvulation{ stroke:var(--yellow-deep); }
-  #arcLuteal{ stroke:var(--purple); }
+  #arcPeriod{ stroke:var(--pink); }        /* 生理期=ピンク */
+  #arcFollicular{ stroke:#FFCFE3; }        /* 卵胞期=うすいピンク */
+  #arcOvulation{ stroke:var(--yellow-deep); } /* 排卵期=黄色 */
+  #arcLuteal{ stroke:#FFF0B8; }            /* 黄体期=うすい黄色 */
   /* ？ボタン */
   .help-btn{ position:absolute; top:2px; right:8px; width:34px; height:34px; border-radius:50%;
     border:none; background:var(--yellow-deep); color:#8a6d1f; font-size:18px; font-weight:bold;
@@ -97,7 +97,7 @@
   .modal-x{ border:none; background:var(--yellow); width:34px; height:34px; border-radius:50%;
     font-size:20px; color:var(--text-soft); cursor:pointer; font-family:inherit; }
   .prow{ display:flex; gap:12px; margin-bottom:14px; align-items:flex-start; }
-  .prow .chip{ flex:0 0 auto; width:34px; height:34px; border-radius:10px; margin-top:2px; }
+  .prow .chip{ flex:0 0 auto; width:34px; height:34px; border-radius:10px; margin-top:2px; border:1px solid rgba(140,110,60,.12); }
   .prow b{ color:var(--text); font-size:15px; }
   .prow p{ margin:4px 0 0; font-size:13.5px; line-height:1.7; color:#8a7a4a; }
   .pnote{ font-size:12.5px; color:var(--text-soft); text-align:center; margin:6px 0 2px; }
@@ -243,11 +243,11 @@
     <div class="modal-head"><span>生理周期について🌸</span><button id="phaseClose" class="modal-x" aria-label="とじる">×</button></div>
     <div class="prow"><span class="chip" style="background:var(--pink)"></span>
       <div><b>生理（月経）期</b><p>いらなくなった子宮のかべが、血といっしょに体の外へ出る期間（だいたい3〜7日）。おなかや腰が痛くなったり、胸が張ることもあるよ。あたたかくして、むりしないでね。</p></div></div>
-    <div class="prow"><span class="chip" style="background:#8FD3F0"></span>
+    <div class="prow"><span class="chip" style="background:#FFCFE3"></span>
       <div><b>卵胞期（らんぽうき）</b><p>生理が終わったあとの時期。体を元気にするホルモンがふえて、お肌や髪の調子がよくなったり、気分も明るくなりやすいよ。いちばん元気にすごしやすい時期。</p></div></div>
     <div class="prow"><span class="chip" style="background:var(--yellow-deep)"></span>
       <div><b>排卵期（はいらんき）</b><p>赤ちゃんのもとになる「卵子（らんし）」が体の中で出るころ。すきとおった「おりもの」がふえたり、おなかの下の方や腰のあたりがチクッとすることもあるよ。</p></div></div>
-    <div class="prow"><span class="chip" style="background:var(--purple)"></span>
+    <div class="prow"><span class="chip" style="background:#FFF0B8"></span>
       <div><b>黄体期（おうたいき）</b><p>次の生理の前の時期。体が水分をためこんでむくみやすく、気分が落ちこんだり、頭が痛くなったり、イライラすることもあるよ（PMSっていうよ）。あまいものが食べたくなる子もいるよ。</p></div></div>
     <p class="pnote">※体の感じ方は一人ひとりちがうよ。ちがっても心配しないでね🌸</p>
   </div>
