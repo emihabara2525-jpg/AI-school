@@ -70,11 +70,37 @@
   .stars .grp span{ cursor:pointer; font-size:20px; }
 
   /* 円 */
-  .ring-wrap{ display:flex; justify-content:center; margin:6px 0 2px;}
+  .ring-wrap{ position:relative; display:flex; justify-content:center; margin:6px 0 2px;}
   svg{ width:290px; height:290px; max-width:86vw;}
   .center-today{ font-size:13px; fill:var(--text-soft);}
   .center-date{ font-size:30px; font-weight:bold; fill:var(--pink);}
   .center-phase{ font-size:16px; font-weight:bold; fill:var(--purple);}
+  /* 4つの時期の色 */
+  .phase-arc{ stroke-linecap:butt; }
+  #arcPeriod{ stroke:var(--pink); }
+  #arcFollicular{ stroke:#8FD3F0; }
+  #arcOvulation{ stroke:var(--yellow-deep); }
+  #arcLuteal{ stroke:var(--purple); }
+  /* ？ボタン */
+  .help-btn{ position:absolute; top:2px; right:8px; width:34px; height:34px; border-radius:50%;
+    border:none; background:var(--yellow-deep); color:#8a6d1f; font-size:18px; font-weight:bold;
+    cursor:pointer; box-shadow:0 3px 8px rgba(255,190,120,.3); z-index:2; font-family:inherit; }
+  .help-btn:active{ transform:scale(.94); }
+  /* 説明ポップアップ */
+  .modal{ position:fixed; inset:0; z-index:5000; background:rgba(120,100,60,.35);
+    display:flex; align-items:center; justify-content:center; padding:16px; }
+  .modal.hide{ display:none; }
+  .modal-card{ background:var(--cream); border-radius:24px; max-width:400px; width:100%;
+    max-height:86vh; overflow-y:auto; padding:18px; box-shadow:0 10px 30px rgba(160,120,60,.3); }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .modal-head span{ font-size:18px; font-weight:bold; color:var(--pink); }
+  .modal-x{ border:none; background:var(--yellow); width:34px; height:34px; border-radius:50%;
+    font-size:20px; color:var(--text-soft); cursor:pointer; font-family:inherit; }
+  .prow{ display:flex; gap:12px; margin-bottom:14px; align-items:flex-start; }
+  .prow .chip{ flex:0 0 auto; width:34px; height:34px; border-radius:10px; margin-top:2px; }
+  .prow b{ color:var(--text); font-size:15px; }
+  .prow p{ margin:4px 0 0; font-size:13.5px; line-height:1.7; color:#8a7a4a; }
+  .pnote{ font-size:12.5px; color:var(--text-soft); text-align:center; margin:6px 0 2px; }
 
   /* 体調記録ボタン */
   .rec-btn{
@@ -186,10 +212,13 @@
   </div>
 
   <div class="ring-wrap">
+    <button id="helpBtn" class="help-btn" aria-label="生理周期について">？</button>
     <svg viewBox="0 0 300 300" id="ring">
       <circle cx="150" cy="150" r="120" fill="none" stroke="var(--ring-bg)" stroke-width="22"/>
-      <circle id="periodArc" cx="150" cy="150" r="120" fill="none" stroke="var(--pink)" stroke-width="22"
-              stroke-linecap="round" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
+      <circle class="phase-arc" id="arcPeriod"     cx="150" cy="150" r="120" fill="none" stroke-width="22" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
+      <circle class="phase-arc" id="arcFollicular" cx="150" cy="150" r="120" fill="none" stroke-width="22" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
+      <circle class="phase-arc" id="arcOvulation"  cx="150" cy="150" r="120" fill="none" stroke-width="22" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
+      <circle class="phase-arc" id="arcLuteal"     cx="150" cy="150" r="120" fill="none" stroke-width="22" transform="rotate(-90 150 150)" stroke-dasharray="0 999"/>
       <text class="center-today" x="150" y="120" text-anchor="middle">TODAY</text>
       <text class="center-date" x="150" y="152" text-anchor="middle" id="centerDate">--/--</text>
       <text class="center-phase" x="150" y="182" text-anchor="middle" id="centerPhase">ふつうの日</text>
@@ -206,6 +235,22 @@
 
   <div class="sub" style="margin-top:14px;">🌷 きょうのメッセージ</div>
   <div id="message"></div>
+</div>
+
+<!-- 生理周期についての説明ポップアップ -->
+<div id="phaseInfo" class="modal hide">
+  <div class="modal-card">
+    <div class="modal-head"><span>生理周期について🌸</span><button id="phaseClose" class="modal-x" aria-label="とじる">×</button></div>
+    <div class="prow"><span class="chip" style="background:var(--pink)"></span>
+      <div><b>生理（月経）期</b><p>いらなくなった子宮のかべが、血といっしょに体の外へ出る期間（だいたい3〜7日）。おなかや腰が痛くなったり、胸が張ることもあるよ。あたたかくして、むりしないでね。</p></div></div>
+    <div class="prow"><span class="chip" style="background:#8FD3F0"></span>
+      <div><b>卵胞期（らんぽうき）</b><p>生理が終わったあとの時期。体を元気にするホルモンがふえて、お肌や髪の調子がよくなったり、気分も明るくなりやすいよ。いちばん元気にすごしやすい時期。</p></div></div>
+    <div class="prow"><span class="chip" style="background:var(--yellow-deep)"></span>
+      <div><b>排卵期（はいらんき）</b><p>赤ちゃんのもとになる「卵子（らんし）」が体の中で出るころ。すきとおった「おりもの」がふえたり、下おなかや腰がチクッとすることもあるよ。</p></div></div>
+    <div class="prow"><span class="chip" style="background:var(--purple)"></span>
+      <div><b>黄体期（おうたいき）</b><p>次の生理の前の時期。体が水分をためこんでむくみやすく、気分が落ちこんだり、頭が痛くなったり、イライラすることもあるよ（PMSっていうよ）。あまいものが食べたくなる子もいるよ。</p></div></div>
+    <p class="pnote">※体の感じ方は一人ひとりちがうよ。ちがっても心配しないでね🌸</p>
+  </div>
 </div>
 
 <!-- カレンダー -->
@@ -343,36 +388,49 @@ function getStats(){
 
 // ====== 円グラフの更新 ======
 const C = 2*Math.PI*120;
+function setArc(id, aFrac, bFrac){
+  const el=document.getElementById(id);
+  const len=Math.max(0,(bFrac-aFrac))*C;
+  el.setAttribute("stroke-dasharray", len.toFixed(2)+" "+(C+2).toFixed(2));
+  el.setAttribute("stroke-dashoffset", (-aFrac*C).toFixed(2));
+}
 function updateRing(st){
   const cDate=document.getElementById("centerDate");
   const cPhase=document.getElementById("centerPhase");
-  const arc=document.getElementById("periodArc");
   const marker=document.getElementById("marker");
   cDate.textContent = (today.getMonth()+1)+"/"+today.getDate();
 
-  let phase="ふつうの日", frac=0, periodFrac=0;
+  let phase="ふつうの日", frac=0;
   if(st.lastStart && st.predict){
-    const total = diffDays(st.predict, st.lastStart); // この周期の長さ
-    const pos = diffDays(todayStr, st.lastStart);      // 今日の位置
-    frac = Math.max(0, Math.min(1, pos/total));
-    periodFrac = Math.min(1, st.avgLen/total);
+    const total = diffDays(st.predict, st.lastStart);          // この周期の長さ(日)
+    let pos = diffDays(todayStr, st.lastStart);                // 今日の位置(日)
+    pos = Math.max(0, Math.min(total, pos));
+    frac = total>0? pos/total : 0;
+    // 4つの時期の区切り（黄体期は約14日、排卵期は約3日）
+    const periodLen = Math.max(3, Math.min(7, st.avgLen));
+    let ovDay = Math.max(periodLen+1, total-14);
+    let ovStart = Math.min(Math.max(ovDay-1, periodLen), total);
+    let ovEnd   = Math.min(ovStart+3, total);
+    // 円に色分け
+    setArc("arcPeriod",     0,            periodLen/total);
+    setArc("arcFollicular", periodLen/total, ovStart/total);
+    setArc("arcOvulation",  ovStart/total,   ovEnd/total);
+    setArc("arcLuteal",     ovEnd/total,     1);
+    // 今日の時期を判定
+    if(data.periodDays[todayStr]) phase="生理期🌸";
+    else if(pos<periodLen) phase="生理期🌸";
+    else if(pos<ovStart)   phase="卵胞期";
+    else if(pos<ovEnd)     phase="排卵期";
+    else                   phase="黄体期";
+  } else {
+    // データがまだないときは色を消す
+    setArc("arcPeriod",0,0); setArc("arcFollicular",0,0); setArc("arcOvulation",0,0); setArc("arcLuteal",0,0);
+    if(data.periodDays[todayStr]) phase="生理期🌸";
   }
-  // 生理の期間アーク（ピンク）
-  arc.setAttribute("stroke-dasharray", (C*periodFrac)+" "+C);
   // マーカー位置
   const ang = frac*2*Math.PI - Math.PI/2;
-  const mx = 150 + 120*Math.cos(ang);
-  const my = 150 + 120*Math.sin(ang);
-  marker.setAttribute("x", mx); marker.setAttribute("y", my+9);
-
-  // 今の時期
-  if(data.periodDays[todayStr]) phase="生理中🌸";
-  else if(st.predict){
-    const d=diffDays(st.predict, todayStr);
-    if(d<=3 && d>=0) phase="そろそろ期";
-    else if(d<0) phase="ふつうの日";
-    else phase="ふつうの日";
-  }
+  marker.setAttribute("x", 150 + 120*Math.cos(ang));
+  marker.setAttribute("y", 150 + 120*Math.sin(ang) + 9);
   cPhase.textContent = phase;
 }
 
@@ -530,6 +588,12 @@ refresh();
 document.getElementById('changePin').onclick=()=>{
   if(confirm('あたらしい あいことばに かえますか？\n（きろくは 消えません）')){ window.__resetLock(); }
 };
+
+// 生理周期の説明ポップアップ（？ボタン）
+const phaseInfo=document.getElementById('phaseInfo');
+document.getElementById('helpBtn').onclick=()=> phaseInfo.classList.remove('hide');
+document.getElementById('phaseClose').onclick=()=> phaseInfo.classList.add('hide');
+phaseInfo.addEventListener('click', e=>{ if(e.target===phaseInfo) phaseInfo.classList.add('hide'); });
 </script>
 </body>
 </html>
