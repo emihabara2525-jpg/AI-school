@@ -117,9 +117,51 @@
   .hint{ text-align:center; font-size:12.5px; color:var(--text-soft); margin-top:10px; line-height:1.6;}
   .legend{ display:flex; justify-content:center; gap:16px; font-size:12px; color:var(--text-soft); margin-top:8px;}
   .legend i{ display:inline-block; width:14px; height:14px; border-radius:50%; vertical-align:-2px; margin-right:3px;}
+
+  /* ===== あいことば（ロック）画面 ===== */
+  #lock{
+    position:fixed; inset:0; z-index:9999;
+    background:linear-gradient(160deg,#FFF7D6 0%,#FFF0F6 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:20px; text-align:center;
+  }
+  #lock.hide{ display:none; }
+  #lock .flower{ font-size:56px; margin-bottom:6px; }
+  #lock .ltitle{ font-size:20px; font-weight:bold; color:var(--text); margin-bottom:4px; }
+  #lock .lsub{ font-size:14px; color:var(--text-soft); margin-bottom:18px; min-height:20px; }
+  .dots{ display:flex; gap:16px; margin-bottom:22px; }
+  .dots .dot{ width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--yellow-deep); }
+  .dots .dot.on{ background:var(--pink); border-color:var(--pink); }
+  #lock.shake{ animation:shk .4s; }
+  @keyframes shk{ 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-10px)} 40%,80%{transform:translateX(10px)} }
+  .pad{ display:grid; grid-template-columns:repeat(3,74px); gap:14px; }
+  .pad button{
+    width:74px; height:74px; border-radius:50%; border:none; font-size:26px; font-weight:bold;
+    background:#fff; color:var(--text); box-shadow:0 4px 10px rgba(255,190,120,.25);
+    cursor:pointer; font-family:inherit;
+  }
+  .pad button:active{ transform:scale(.94); background:var(--pink-soft); }
+  .pad button.fn{ background:transparent; box-shadow:none; font-size:22px; color:var(--text-soft); }
+  #lockHint{ margin-top:18px; font-size:14px; color:#C25A8A; min-height:20px; }
+  #lockHint b{ background:var(--pink-soft); padding:2px 10px; border-radius:999px; }
 </style>
 </head>
 <body>
+
+<!-- あいことば（ロック）画面 -->
+<div id="lock">
+  <div class="flower">🌸</div>
+  <div class="ltitle" id="lockTitle">あいことばを入れてね</div>
+  <div class="lsub" id="lockSub">数字を4つ おしてね</div>
+  <div class="dots" id="lockDots"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+  <div class="pad" id="lockPad">
+    <button>1</button><button>2</button><button>3</button>
+    <button>4</button><button>5</button><button>6</button>
+    <button>7</button><button>8</button><button>9</button>
+    <button class="fn" style="visibility:hidden" tabindex="-1"></button><button>0</button><button class="fn" id="lockDel">⌫</button>
+  </div>
+  <div id="lockHint"></div>
+</div>
 
 <h1>🌸 わたしのカレンダー 🌸</h1>
 
@@ -175,9 +217,72 @@
     <span><i style="background:var(--pink-soft)"></i>よそくの日</span>
   </div>
   <div class="hint">生理がきた日を<b>タップ</b>すると🌸に記録できるよ。<br>まちがえたら<b>もう一回タップ</b>で消せるよ💛</div>
+  <div style="text-align:center; margin-top:14px;">
+    <button id="changePin" style="background:transparent; border:2px solid var(--yellow-deep); color:var(--text-soft); border-radius:999px; padding:8px 18px; font-size:13px; font-family:inherit; cursor:pointer;">🔒 あいことばを かえる</button>
+  </div>
 </div>
 
 <script>
+// ====== あいことば（ロック）機能 ======
+(function(){
+  const LKEY="myseiri_lock_v1";
+  function lget(){ try{ return JSON.parse(localStorage.getItem(LKEY))||null; }catch(e){ return null; } }
+  function lset(o){ try{ localStorage.setItem(LKEY, JSON.stringify(o)); }catch(e){} }
+  function hash(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h)+s.charCodeAt(i); h|=0; } return "h"+(h>>>0); }
+  function esc(s){ return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+  const lock=document.getElementById('lock');
+  const title=document.getElementById('lockTitle');
+  const sub=document.getElementById('lockSub');
+  const dotsEl=document.getElementById('lockDots');
+  const hintEl=document.getElementById('lockHint');
+
+  let mode, entry="", firstPin="", wrong=0;
+  const saved=lget();
+
+  function drawDots(){ dotsEl.querySelectorAll('.dot').forEach((d,i)=> d.classList.toggle('on', i<entry.length)); }
+  function clr(){ entry=""; drawDots(); }
+  function shake(){ lock.classList.add('shake'); setTimeout(()=>lock.classList.remove('shake'),420); }
+
+  function start(){
+    if(!saved){ mode='set1'; title.textContent='あいことばを きめてね'; sub.textContent='すきな数字を4つ おしてね'; }
+    else { mode='unlock'; title.textContent='あいことばを入れてね'; sub.textContent='数字を4つ おしてね'; }
+    clr();
+  }
+  function done(){ lock.classList.add('hide'); }
+
+  function complete(){
+    if(mode==='set1'){ firstPin=entry; mode='set2'; title.textContent='もういちど 入れてね'; sub.textContent='おなじ数字を かくにん'; clr(); return; }
+    if(mode==='set2'){
+      if(entry===firstPin){
+        let hint=window.prompt('あいことばを わすれたとき用の「ヒント」をきめてね。\n（れい：すきな数字／たんじょう日 など）\n※いらなければ そのままOKでもいいよ','');
+        lset({ h:hash(firstPin), hint:(hint||'').trim() });
+        done();
+      } else { title.textContent='あれ？ちがうみたい'; sub.textContent='もういちど 4つ きめてね'; mode='set1'; clr(); shake(); }
+      return;
+    }
+    // unlock
+    if(hash(entry)===saved.h){ hintEl.textContent=''; done(); }
+    else {
+      wrong++; clr(); shake(); sub.textContent='ちがうみたい…もういちど';
+      if(wrong>=3 && saved.hint){ hintEl.innerHTML='ヒント: <b>'+esc(saved.hint)+'</b>'; }
+    }
+  }
+
+  document.getElementById('lockPad').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    if(b.id==='lockDel'){ entry=entry.slice(0,-1); drawDots(); return; }
+    if(!/^[0-9]$/.test(b.textContent)) return;
+    if(entry.length>=4) return;
+    entry+=b.textContent; drawDots();
+    if(entry.length===4) setTimeout(complete,140);
+  });
+
+  start();
+  // 設定変更などから使えるように公開
+  window.__resetLock=function(){ localStorage.removeItem(LKEY); location.reload(); };
+})();
+
 // ====== データ保存（この端末だけ） ======
 const KEY = "myseiri_v1";
 function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
@@ -373,6 +478,11 @@ function refresh(){
   updateTop(st); updateRing(st); updateStars(); renderCal();
 }
 refresh();
+
+// あいことばを変える（今ひらけている＝本人なのでOK。新しい合言葉を決め直す）
+document.getElementById('changePin').onclick=()=>{
+  if(confirm('あたらしい あいことばに かえますか？\n（きろくは 消えません）')){ window.__resetLock(); }
+};
 </script>
 </body>
 </html>
