@@ -62,6 +62,8 @@
     display:inline-block; background:var(--yellow-deep); color:#8a6d1f;
     padding:4px 14px; border-radius:999px; font-size:15px; font-weight:bold; margin-top:4px;
   }
+  .top .more-preds{ margin-top:10px; font-size:13px; color:var(--text-soft); line-height:1.7; }
+  .top .more-preds .pill{ display:inline-block; background:var(--pink-soft); color:#C25A8A; border-radius:999px; padding:2px 10px; margin:2px 3px; font-weight:bold; }
 
   /* 星 */
   .stars{ display:flex; justify-content:center; gap:22px; margin-top:12px; font-size:14px;}
@@ -170,9 +172,10 @@
 <!-- 円と予測のカード -->
 <div class="card">
   <div class="top">
-    <div class="label">つぎの生理日</div>
+    <div class="label">つぎの生理予想日</div>
     <div class="nextdate" id="nextDate">— / —</div>
     <div class="remain" id="remain">あと ― 日</div>
+    <div class="more-preds" id="morePreds"></div>
   </div>
 
   <div class="stars">
@@ -323,14 +326,17 @@ function getStats(){
   }
   const lastStart = starts.length? starts[starts.length-1] : null;
   const avgLen = p.length? Math.round(p.reduce((s,x)=>s+x.len,0)/p.length) : 5;
-  let predict=null;
+  let predict=null, predicts=[];
   if(lastStart){
     // 今日を過ぎている予測は次の周期にずらす
     let np=addDays(parse(lastStart), cycle);
     while(np < today){ np=addDays(np, cycle); }
     predict=ymd(np);
+    // 3回先までの予想開始日
+    let cur=new Date(np);
+    for(let i=0;i<3;i++){ predicts.push(ymd(cur)); cur=addDays(cur, cycle); }
   }
-  return {periods:p, cycle, haveCycle, lastStart, predict, avgLen};
+  return {periods:p, cycle, haveCycle, lastStart, predict, predicts, avgLen};
 }
 
 // ====== 円グラフの更新 ======
@@ -374,6 +380,7 @@ function updateTop(st){
   const rm=document.getElementById("remain");
   const notice=document.getElementById("notice");
   const msg=document.getElementById("message");
+  const more=document.getElementById("morePreds");
 
   if(st.predict){
     const p=parse(st.predict);
@@ -385,10 +392,16 @@ function updateTop(st){
       notice.style.display="block";
       notice.textContent = d===0? "🌸 きょうは よそく日だよ。むりしないでね" : ("🌸 あと"+d+"日で よそく日だよ。じゅんびしてね");
     } else notice.style.display="none";
+    // そのあとの予想（2回目・3回目＝3か月先まで）
+    const rest=(st.predicts||[]).slice(1);
+    if(rest.length){
+      more.innerHTML="そのあとの予想日🌸<br>"+rest.map(s=>{ const x=parse(s); return '<span class="pill">'+(x.getMonth()+1)+"/"+x.getDate()+"</span>"; }).join("");
+    } else more.innerHTML="";
   }else{
     nd.textContent="— / —";
     rm.textContent="まだデータがないよ";
     notice.style.display="none";
+    more.innerHTML="";
   }
 
   // メッセージ
@@ -454,6 +467,9 @@ function renderCal(){
   document.getElementById("ym").textContent=viewY+"年 "+(viewM+1)+"月";
   const first=new Date(viewY,viewM,1).getDay();
   const last=new Date(viewY,viewM+1,0).getDate();
+  // 予想の期間（3か月先まで、各回 avgLen 日ぶん）をまとめておく
+  const predSet=new Set();
+  (st.predicts||[]).forEach(s=>{ for(let i=0;i<st.avgLen;i++){ predSet.add(ymd(addDays(parse(s), i))); } });
   const days=document.getElementById("days"); days.innerHTML="";
   for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="day empty"; days.appendChild(e); }
   for(let d=1;d<=last;d++){
@@ -461,7 +477,7 @@ function renderCal(){
     const el=document.createElement("div"); el.className="day"; el.textContent=d;
     if(key===todayStr) el.classList.add("today");
     if(data.periodDays[key]){ el.classList.add("period"); const m=document.createElement("span"); m.className="mk"; m.textContent="🌸"; el.appendChild(m); }
-    else if(st.predict===key){ el.classList.add("predict"); const m=document.createElement("span"); m.className="mk"; m.textContent="💧"; el.appendChild(m); }
+    else if(predSet.has(key)){ el.classList.add("predict"); const m=document.createElement("span"); m.className="mk"; m.textContent="💧"; el.appendChild(m); }
     el.onclick=()=>{
       if(data.periodDays[key]) delete data.periodDays[key]; else data.periodDays[key]=true;
       save(data); refresh();
