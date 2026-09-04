@@ -601,8 +601,8 @@ function renderReservations(list){
     const cur = b.getAttribute("data-cur");
     setStatus(b.getAttribute("data-recv"), cur === "受付済" ? "予約" : "受付済");
   });
-  box.querySelectorAll("[data-cancel]").forEach((b) => b.onclick = () => {
-    if (confirm("この予約を取り消しますか？（1台ぶん空きが戻ります）")) cancelReservation(b.getAttribute("data-cancel"));
+  box.querySelectorAll("[data-cancel]").forEach((b) => b.onclick = async () => {
+    if (await askConfirm("この予約を取り消しますか？（1台ぶん空きが戻ります）", "はい、取り消す")) cancelReservation(b.getAttribute("data-cancel"));
   });
 }
 
@@ -663,6 +663,31 @@ function formatPhone(v){
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+// わかりやすい確認ダイアログ（標準のOK/キャンセルの紛らわしさを解消）
+function askConfirm(msg, okLabel){
+  return new Promise((resolve) => {
+    let ov = document.getElementById("confirmOverlay");
+    if (!ov){
+      ov = document.createElement("div"); ov.id = "confirmOverlay";
+      ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px";
+      ov.innerHTML =
+        '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)">' +
+        '<div id="confirmMsg" style="font-size:15px;font-weight:700;line-height:1.7;margin-bottom:18px"></div>' +
+        '<button id="confirmOk" style="width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:800;color:#fff;background:#c1272d;cursor:pointer">はい</button>' +
+        '<button id="confirmNo" style="width:100%;border:none;border-radius:12px;padding:12px;margin-top:10px;font-size:15px;font-weight:700;color:#8a7d76;background:#f3ece7;cursor:pointer">やめる</button>' +
+        '</div>';
+      document.body.appendChild(ov);
+    }
+    ov.querySelector("#confirmMsg").textContent = msg;
+    ov.querySelector("#confirmOk").textContent = okLabel || "はい";
+    ov.style.display = "flex";
+    const ok = ov.querySelector("#confirmOk"), no = ov.querySelector("#confirmNo");
+    const done = (v) => { ov.style.display = "none"; ok.onclick = null; no.onclick = null; resolve(v); };
+    ok.onclick = () => done(true);
+    no.onclick = () => done(false);
+  });
 }
 
 let toastTimer = null;
